@@ -20,7 +20,7 @@ export function ToolSwitch({ tool, onChange }: { tool: Tool; onChange: (t: Tool)
         }
       }}
       className={cn(
-        "focus-ring flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[14px] font-bold transition-colors duration-150 select-none touch-manipulation",
+        "focus-ring flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-[14px] font-bold transition-colors duration-100 select-none touch-manipulation",
         tool === id ? active : "text-muted hover:bg-white/5 hover:text-ink",
       )}
     >
@@ -29,21 +29,21 @@ export function ToolSwitch({ tool, onChange }: { tool: Tool; onChange: (t: Tool)
     </button>
   );
   return (
-    <div role="radiogroup" aria-label="Tap action" className="surface flex gap-1.5 rounded-2xl p-1">
-      {opt("dig", "Dig", <Pickaxe size={16} aria-hidden="true" />, "bg-accent text-[#04101f] shadow-sm")}
-      {opt("flag", "Flag", <Flag size={16} aria-hidden="true" />, "bg-flag text-[#1f1300] shadow-sm")}
+    <div role="radiogroup" aria-label="Tap action" className="surface flex gap-1 rounded-xl p-1">
+      {opt("dig", "Dig", <Pickaxe size={16} aria-hidden="true" />, "bg-mint text-[#052e16]")}
+      {opt("flag", "Flag", <Flag size={16} aria-hidden="true" />, "bg-flag text-[#271800]")}
     </div>
   );
 }
 
-/** Compact zoom controls for touch / one-handed mobile play. */
+/** Compact zoom controls for touch / narrow mobile viewports. */
 export function MobileZoomControls({ camera }: { camera: Camera }) {
   const zoom = (f: number) => {
     sfx.click();
     camera.zoomAt(camera.viewW / 2, camera.viewH / 2, f);
   };
   return (
-    <div className="surface flex items-center gap-1 rounded-2xl p-1 sm:hidden">
+    <div className="surface flex items-center gap-1 rounded-xl p-1 sm:hidden">
       <button
         type="button"
         className="btn btn-icon"
@@ -104,7 +104,7 @@ export function ViewReadout({
   };
 
   return (
-    <div className="surface flex items-center gap-1 rounded-2xl p-1">
+    <div className="surface flex items-center gap-1 rounded-xl p-1">
       <button
         type="button"
         className="btn btn-icon"
@@ -114,7 +114,7 @@ export function ViewReadout({
       >
         <Minus size={17} aria-hidden="true" />
       </button>
-      <div className="min-w-[120px] px-2 text-center font-mono text-[12.5px] whitespace-pre text-ink/90 tabular-nums">
+      <div className="min-w-[116px] px-2 text-center font-mono text-[12.5px] whitespace-pre text-ink/90 tabular-nums">
         {text}
       </div>
       <button

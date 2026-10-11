@@ -4,7 +4,6 @@ import {
   Heart,
   Locate,
   Pause,
-  SlidersHorizontal,
   Timer,
   Trophy,
   Volume2,
@@ -41,7 +40,7 @@ function Stat({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-1.5 sm:gap-2", className)} title={label}>
+    <div className={cn("flex shrink-0 items-center gap-1.5 sm:gap-2", className)} title={label}>
       <span className="text-muted" aria-hidden="true">
         {icon}
       </span>
@@ -54,24 +53,26 @@ function Stat({
             </span>
           )}
         </div>
-        <div className="font-mono text-[14px] font-bold text-ink tabular-nums sm:mt-0.5">{value}</div>
+        <div className="font-mono text-[13px] font-bold text-ink tabular-nums sm:mt-0.5 sm:text-[14px]">
+          {value}
+        </div>
       </div>
     </div>
   );
 }
 
 const Divider = ({ className }: { className?: string }) => (
-  <div className={cn("h-6 w-px shrink-0 bg-[#2c3b59]", className)} aria-hidden="true" />
+  <div className={cn("h-5 w-px shrink-0 bg-[#2e333d] sm:h-6", className)} aria-hidden="true" />
 );
 
 export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
   const ms = useElapsed(game, snap.running, snap.status);
   const beating = snap.score > 0 && snap.score >= snap.best;
   return (
-    <div className="surface flex min-w-0 items-center gap-2.5 rounded-xl px-2.5 py-2 sm:gap-3.5 sm:px-3.5">
+    <div className="surface flex items-center gap-2 rounded-xl px-2.5 py-2 sm:gap-3.5 sm:px-3.5">
       <MineIcon className="hidden h-6 w-6 shrink-0 sm:block" />
       <div
-        className="flex items-center gap-0.5"
+        className="flex shrink-0 items-center gap-0.5"
         aria-label={`${snap.lives} of ${snap.maxLives} lives left`}
       >
         {Array.from({ length: snap.maxLives }).map((_, i) => {
@@ -79,8 +80,8 @@ export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
           return (
             <Heart
               key={i}
-              size={16}
-              fill={alive ? "#fb7185" : "transparent"}
+              size={15}
+              fill={alive ? "#f43f5e" : "transparent"}
               aria-hidden="true"
               className={cn(
                 alive ? "text-danger" : "text-muted/35",
@@ -92,27 +93,27 @@ export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
       </div>
       <Divider />
       <Stat
-        icon={<Trophy size={15} className={beating ? "text-mint" : undefined} />}
+        icon={<Trophy size={14} className={beating ? "text-mint" : undefined} />}
         label="Score"
         value={<span className={beating ? "text-mint" : undefined}>{fmtNum(snap.score)}</span>}
         badge={beating ? "PB" : undefined}
       />
       <Stat
-        icon={<Trophy size={15} className={beating ? "text-mint" : undefined} />}
+        icon={<Trophy size={14} className={beating ? "text-mint" : undefined} />}
         label="Best"
         value={<span className={beating ? "text-mint" : undefined}>{fmtNum(snap.best)}</span>}
         className="hidden md:flex"
       />
       <Divider />
-      <Stat icon={<Timer size={15} />} label="Time" value={fmtTime(ms)} />
+      <Stat icon={<Timer size={14} />} label="Time" value={fmtTime(ms)} />
       <Stat
-        icon={<Grid3x3 size={15} />}
+        icon={<Grid3x3 size={14} />}
         label="Cleared"
         value={fmtNum(snap.revealed)}
         className="hidden sm:flex"
       />
       <Stat
-        icon={<Flag size={15} className="text-flag" />}
+        icon={<Flag size={14} className="text-flag" />}
         label="Flags"
         value={snap.flags}
         className="hidden sm:flex"
@@ -125,7 +126,6 @@ interface ButtonsProps {
   muted: boolean;
   onToggleMute: () => void;
   onCenter: () => void;
-  onSettings: () => void;
   onPause: () => void;
   disablePause?: boolean;
 }
@@ -134,12 +134,11 @@ export function HudButtons({
   muted,
   onToggleMute,
   onCenter,
-  onSettings,
   onPause,
   disablePause,
 }: ButtonsProps) {
   return (
-    <div className="flex shrink-0 gap-2">
+    <div className="flex shrink-0 gap-1.5 sm:gap-2">
       <button
         type="button"
         className="btn btn-icon surface"
@@ -160,19 +159,10 @@ export function HudButtons({
       </button>
       <button
         type="button"
-        className="btn btn-icon surface hidden min-[410px]:inline-flex"
-        onClick={onSettings}
-        title="Settings"
-        aria-label="Settings"
-      >
-        <SlidersHorizontal size={18} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
         className="btn btn-icon surface"
         onClick={onPause}
         disabled={disablePause}
-        title="Pause (Esc)"
+        title="Pause & Settings (Esc)"
         aria-label="Pause"
       >
         <Pause size={18} aria-hidden="true" />

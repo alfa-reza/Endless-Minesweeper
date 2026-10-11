@@ -13,7 +13,6 @@ import { HelpModal } from "./HelpModal";
 import { HudButtons, StatsBar } from "./Hud";
 import { Minimap } from "./Minimap";
 import { PauseModal } from "./PauseModal";
-import { SettingsModal } from "./SettingsModal";
 
 interface Props {
   difficulty: Difficulty;
@@ -23,7 +22,7 @@ interface Props {
   onMenu: () => void;
 }
 
-type Overlay = "none" | "pause" | "settings" | "help" | "over";
+type Overlay = "none" | "pause" | "help" | "over";
 
 function useCoarsePointer() {
   const [coarse, setCoarse] = useState(() => window.matchMedia("(pointer: coarse)").matches);
@@ -48,7 +47,6 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
   const snap = useSyncExternalStore(game.subscribe, game.getSnapshot);
 
   const [overlay, setOverlay] = useState<Overlay>("none");
-  const [returnTo, setReturnTo] = useState<"none" | "pause">("none");
   const [tool, setTool] = useState<Tool>("dig");
   const [hurtKey, setHurtKey] = useState(0);
 
@@ -68,10 +66,8 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
     hoverListeners.current.forEach((fn) => fn());
   }, []);
 
-  // ---- lifecycle ----
   useEffect(() => () => game.dispose(), [game]);
 
-  // ---- adaptive music tension ----
   useEffect(() => {
     if (snap.status === "over") {
       sfx.setTension(0);
@@ -84,7 +80,6 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
     else sfx.setTension(0);
   }, [snap.status, snap.lives, snap.maxLives, snap.revealed, difficulty.id]);
 
-  // ---- game events -> sound, juice and the game-over modal ----
   useEffect(() => {
     let overTimer = 0;
     game.onEvent = (e: GameEvent) => {
@@ -134,7 +129,6 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
     };
   }, [game, camera, effects]);
 
-  // ---- pause handling ----
   const pause = useCallback(() => {
     if (game.isOver() || overlayRef.current !== "none") return;
     game.pause();
@@ -174,24 +168,6 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
     if (!next) sfx.click();
   };
 
-  const openSettings = (from: "none" | "pause") => {
-    sfx.click();
-    if (from === "none") game.pause();
-    setReturnTo(from);
-    setOverlay("settings");
-  };
-
-  const closeSubModal = () => {
-    if (game.isOver()) {
-      setOverlay("none");
-    } else if (returnTo === "pause") {
-      setOverlay("pause");
-    } else {
-      game.resume();
-      setOverlay("none");
-    }
-  };
-
   const center = () => {
     sfx.click();
     camera.flyTo(0.5, 0.5, defaultCellSize(coarse));
@@ -219,12 +195,11 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
         onPauseRequest={pause}
       />
 
-      {/* Vignette & mine hit flash */}
-      <div className="vignette" />
+      {/* Mine hit flash */}
       {hurtKey > 0 && (
         <div
           key={hurtKey}
-          className="animate-hurt pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,113,133,0.06)_35%,rgba(244,63,94,0.48)_100%)]"
+          className="animate-hurt pointer-events-none absolute inset-0 bg-danger/20"
         />
       )}
 
@@ -238,7 +213,6 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
             muted={save.muted}
             onToggleMute={toggleMute}
             onCenter={center}
-            onSettings={() => openSettings("none")}
             onPause={pause}
             disablePause={over}
           />
@@ -248,8 +222,8 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
       {/* Contextual banners */}
       {snap.status === "ready" && overlay === "none" && (
         <div className="animate-rise pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] flex justify-center px-4">
-          <div className="surface rounded-xl px-4 py-2 text-center text-[13px] text-ink">
-            <b className="text-mint">First click is always safe.</b>{" "}
+          <div className="surface rounded-xl px-3.5 py-2 text-center text-[13px] text-ink">
+            <b className="text-mint">First click is safe.</b>{" "}
             <span className="text-muted">
               {coarse
                 ? "Tap to dig · hold to flag · pinch to zoom"
@@ -261,7 +235,7 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
 
       {over && overlay === "none" && (
         <div className="animate-rise pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] flex justify-center px-4">
-          <div className="surface pointer-events-auto flex flex-wrap items-center justify-center gap-2.5 rounded-2xl px-3.5 py-2">
+          <div className="surface pointer-events-auto flex flex-wrap items-center justify-center gap-2.5 rounded-xl px-3.5 py-2">
             <span className="text-[13px] font-bold text-danger">Game over — spectating</span>
             <div className="flex gap-2">
               <button
@@ -312,8 +286,8 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
           {!over && <ToolSwitch tool={tool} onChange={setTool} />}
         </div>
 
-        <div className="pointer-events-auto ml-auto sm:ml-0">
-          <Minimap game={game} camera={camera} highContrast={save.highContrast} coarse={coarse} />
+        <div className="pointer-events-auto">
+          <Minimap game={game} camera={camera} highContrast={save.highContrast} />
         </div>
       </div>
 
@@ -321,21 +295,16 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
       {overlay === "pause" && (
         <PauseModal
           game={game}
-          muted={save.muted}
-          onToggleMute={toggleMute}
           onResume={resume}
-          onSettings={() => openSettings("pause")}
-          onHelp={() => {
-            setReturnTo("pause");
-            setOverlay("help");
-          }}
+          onHelp={() => setOverlay("help")}
           onNewRound={onNewRound}
           onRetrySeed={onRetrySeed}
           onMenu={onMenu}
         />
       )}
-      {overlay === "settings" && <SettingsModal onClose={closeSubModal} />}
-      {overlay === "help" && <HelpModal onClose={closeSubModal} />}
+      {overlay === "help" && (
+        <HelpModal onClose={() => (game.isOver() ? setOverlay("none") : setOverlay("pause"))} />
+      )}
       {overlay === "over" && (
         <GameOverModal
           game={game}

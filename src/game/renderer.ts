@@ -278,12 +278,9 @@ export function renderWorld(
   const reduce = !!o.reduceMotion;
   let animating = false;
 
-  // ---- background ----
+  // ---- background (flat, crisp) ----
   ctx.globalAlpha = 1;
-  const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.hypot(W, H) / 2);
-  bg.addColorStop(0, pal.baseGlow);
-  bg.addColorStop(1, pal.base);
-  ctx.fillStyle = bg;
+  ctx.fillStyle = pal.base;
   ctx.fillRect(0, 0, W, H);
 
   ctx.save();

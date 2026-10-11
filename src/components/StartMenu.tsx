@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ChevronDown,
   Dices,
   Heart,
   HelpCircle,
@@ -14,7 +15,6 @@ import { sfx } from "../game/audio";
 import { DIFFICULTIES, getDifficulty, type DifficultyId } from "../game/config";
 import { dailySeedLabel, randomSeedLabel } from "../game/seed";
 import { loadSave, patchSave, subscribeSave } from "../game/storage";
-import { cn } from "../utils/cn";
 import { HelpModal } from "./HelpModal";
 import { MineIcon } from "./Logo";
 import { MenuBackdrop } from "./MenuBackdrop";
@@ -34,6 +34,8 @@ export function StartMenu({ onPlay }: Props) {
   const playRef = useRef<HTMLButtonElement>(null);
 
   const selected = getDifficulty(difficulty);
+  const bestScore = save.best[difficulty] ?? 0;
+  const bestCleared = save.bestCleared[difficulty] ?? 0;
 
   const start = () => {
     sfx.unlock();
@@ -47,7 +49,6 @@ export function StartMenu({ onPlay }: Props) {
     sfx.click();
     setDifficulty(id);
     patchSave({ difficulty: id });
-    playRef.current?.focus({ preventScroll: true });
   };
 
   const toggleMute = () => {
@@ -61,9 +62,9 @@ export function StartMenu({ onPlay }: Props) {
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-night">
       <MenuBackdrop reduceMotion={save.reduceMotion} highContrast={save.highContrast} />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(9,13,22,0.58)_0%,rgba(9,13,22,0.92)_78%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[#111317]/45" />
 
-      {/* Top utility bar with safe-area insets */}
+      {/* Top utility bar (Mute & Settings only — no duplicate Help icon) */}
       <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-10 flex gap-2">
         <button
           type="button"
@@ -87,100 +88,83 @@ export function StartMenu({ onPlay }: Props) {
         >
           <SlidersHorizontal size={18} aria-hidden="true" />
         </button>
-        <button
-          type="button"
-          className="btn btn-icon surface"
-          onClick={() => {
-            sfx.unlock();
-            sfx.click();
-            setModal("help");
-          }}
-          aria-label="How to play"
-          title="How to play"
-        >
-          <HelpCircle size={18} aria-hidden="true" />
-        </button>
       </div>
 
       <div className="thin-scroll absolute inset-0 overflow-y-auto">
-        <main className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center justify-center gap-5 pt-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
+        <main className="mx-auto flex min-h-full w-full max-w-md flex-col items-center justify-center gap-4 pt-[max(4rem,calc(env(safe-area-inset-top)+3.25rem))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.25rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
           {/* Title */}
           <header className="animate-rise flex flex-col items-center text-center">
-            <div className="mb-2 flex items-center gap-2.5">
-              <MineIcon className="h-9 w-9 sm:h-11 sm:w-11" />
-              <span className="text-[12px] font-bold tracking-[0.38em] text-accent uppercase sm:text-[13px]">
+            <div className="mb-1.5 flex items-center gap-2">
+              <MineIcon className="h-8 w-8" />
+              <span className="text-[12px] font-bold tracking-[0.34em] text-mint uppercase">
                 Endless
               </span>
             </div>
-            <h1 className="text-4xl leading-[1.05] font-bold tracking-tight text-ink sm:text-6xl">
+            <h1 className="text-4xl leading-none font-bold tracking-tight text-ink sm:text-5xl">
               Minesweeper
             </h1>
-            <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-muted sm:text-[15px]">
-              An infinite board with no edges. Clear safe pockets, mark mines, and push as far as your nerve holds.
+            <p className="mt-2 max-w-xs text-[13.5px] leading-snug text-muted sm:max-w-sm">
+              Infinite procedural board. Clear safe pockets and push your score.
             </p>
           </header>
 
-          {/* Setup card */}
+          {/* Compact setup card */}
           <section
-            className="animate-rise surface w-full rounded-2xl p-4 sm:p-5"
+            className="animate-rise surface w-full rounded-xl p-4 sm:p-5"
             aria-label="Game setup"
           >
-            <div className="mb-2.5 flex items-center justify-between gap-2">
-              <h2 className="text-[12px] font-bold tracking-[0.16em] text-muted uppercase">Difficulty</h2>
-              <span className="text-[13px] font-medium text-ink/90">{selected.tagline}</span>
+            {/* Difficulty dropdown */}
+            <div className="flex items-center justify-between gap-2">
+              <label
+                htmlFor="difficulty-select"
+                className="text-[12px] font-bold tracking-wider text-muted uppercase"
+              >
+                Difficulty
+              </label>
+              <span className="text-[12.5px] font-medium text-ink/90">{selected.tagline}</span>
             </div>
 
-            <div role="radiogroup" aria-label="Difficulty" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {DIFFICULTIES.map((d) => {
-                const active = d.id === difficulty;
-                const best = save.best[d.id] ?? 0;
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => pick(d.id)}
-                    className={cn(
-                      "chip group relative flex min-h-[44px] cursor-pointer flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors duration-150",
-                      active
-                        ? "bg-[#1a2640]"
-                        : "border-[#26334d] bg-[#0f172a]/70 hover:border-[#3d527a] hover:bg-[#141f35]",
-                    )}
-                    style={
-                      active
-                        ? { borderColor: d.accent, boxShadow: `inset 0 0 0 1px ${d.accent}55` }
-                        : undefined
-                    }
-                  >
-                    <span className="flex w-full items-center justify-between">
-                      <span className="text-[15px] font-bold" style={{ color: active ? d.accent : undefined }}>
-                        {d.name}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ background: d.accent, opacity: active ? 1 : 0.45 }}
-                      />
-                    </span>
-                    <span className="font-mono text-[12px] text-muted">{Math.round(d.density * 100)}% mines</span>
-                    <span className="flex items-center gap-0.5 text-danger" aria-label={`${d.lives} lives, ${d.multiplier}x score`}>
-                      {Array.from({ length: d.lives }).map((_, i) => (
-                        <Heart key={i} size={13} fill="currentColor" aria-hidden="true" />
-                      ))}
-                      <span className="ml-1.5 font-mono text-[12px] text-muted">×{d.multiplier}</span>
-                    </span>
-                    <span className="mt-0.5 flex items-center gap-1 font-mono text-[12px] font-semibold text-flag">
-                      <Trophy size={12} aria-hidden="true" /> {best > 0 ? fmt(best) : "—"}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="relative mt-1.5">
+              <select
+                id="difficulty-select"
+                value={difficulty}
+                onChange={(e) => pick(e.target.value as DifficultyId)}
+                className="focus-ring min-h-[44px] w-full cursor-pointer appearance-none rounded-lg border border-[#353b47] bg-[#111317] pr-10 pl-3.5 text-[15px] font-semibold text-ink"
+              >
+                {DIFFICULTIES.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} — {Math.round(d.density * 100)}% mines · {d.lives}{" "}
+                    {d.lives === 1 ? "life" : "lives"} · ×{d.multiplier}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={18}
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted"
+              />
             </div>
 
+            {/* Compact stats row for chosen difficulty */}
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2a2f39] bg-[#111317]/75 px-3 py-2 text-[12.5px]">
+              <span className="flex items-center gap-1.5 text-ink">
+                <span className="flex items-center gap-0.5 text-danger" aria-label={`${selected.lives} lives`}>
+                  {Array.from({ length: selected.lives }).map((_, i) => (
+                    <Heart key={i} size={13} fill="currentColor" aria-hidden="true" />
+                  ))}
+                </span>
+                <span className="font-mono text-muted">×{selected.multiplier} pts</span>
+              </span>
+              <span className="flex items-center gap-1 font-mono font-semibold text-flag">
+                <Trophy size={13} aria-hidden="true" />
+                {bestScore > 0 ? `${fmt(bestScore)} (${fmt(bestCleared)} tiles)` : "No record yet"}
+              </span>
+            </div>
+
+            {/* World seed */}
             <label
               htmlFor="world-seed-input"
-              className="mt-4 mb-2 block text-[12px] font-bold tracking-[0.16em] text-muted uppercase"
+              className="mt-4 mb-1.5 block text-[12px] font-bold tracking-wider text-muted uppercase"
             >
               World seed
             </label>
@@ -192,10 +176,10 @@ export function StartMenu({ onPlay }: Props) {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") start();
                 }}
-                placeholder="Random — or enter seed"
+                placeholder="Random or custom seed"
                 spellCheck={false}
                 autoComplete="off"
-                className="focus-ring min-h-[44px] min-w-0 flex-1 rounded-xl border border-[#2c3b59] bg-[#090d16] px-3.5 py-2 font-mono text-[16px] tracking-wide text-ink uppercase placeholder:text-[14px] placeholder:tracking-normal placeholder:text-muted placeholder:normal-case"
+                className="focus-ring min-h-[44px] min-w-0 flex-1 rounded-lg border border-[#353b47] bg-[#111317] px-3 py-2 font-mono text-[16px] tracking-wide text-ink uppercase placeholder:text-[14px] placeholder:tracking-normal placeholder:text-muted placeholder:normal-case"
               />
               <button
                 type="button"
@@ -224,19 +208,17 @@ export function StartMenu({ onPlay }: Props) {
                 <CalendarDays size={18} aria-hidden="true" />
               </button>
             </div>
-            <p className="mt-1.5 text-[12.5px] text-muted">
-              Same seed and difficulty always generate the exact same world.
-            </p>
 
-            <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+            {/* Actions */}
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
                 ref={playRef}
                 type="button"
                 autoFocus
                 onClick={start}
-                className="btn btn-primary flex-1 py-3 text-[16px] tracking-wide"
+                className="btn btn-primary flex-1 py-2.5 text-[15px]"
               >
-                <Play size={18} fill="currentColor" aria-hidden="true" /> Play
+                <Play size={17} fill="currentColor" aria-hidden="true" /> Play
               </button>
               <button
                 type="button"
@@ -245,24 +227,15 @@ export function StartMenu({ onPlay }: Props) {
                   sfx.click();
                   setModal("help");
                 }}
-                className="btn py-3 sm:w-44"
+                className="btn py-2.5 sm:w-36"
               >
-                <HelpCircle size={17} aria-hidden="true" /> How to play
+                <HelpCircle size={17} aria-hidden="true" /> Guide
               </button>
             </div>
           </section>
 
-          <footer className="animate-rise flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] text-muted">
-            <span>
-              Runs played: <b className="font-mono text-ink">{fmt(save.games)}</b>
-            </span>
-            <span className="hidden sm:inline" aria-hidden="true">
-              ·
-            </span>
-            <span>
-              Best cleared ({selected.name}):{" "}
-              <b className="font-mono text-ink">{fmt(save.bestCleared[difficulty] ?? 0)}</b> tiles
-            </span>
+          <footer className="animate-rise text-center text-[12.5px] text-muted">
+            Runs played: <b className="font-mono text-ink">{fmt(save.games)}</b>
           </footer>
         </main>
       </div>

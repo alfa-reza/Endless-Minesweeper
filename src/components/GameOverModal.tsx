@@ -16,7 +16,7 @@ interface Props {
 
 function StatCell({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#26334d] bg-[#0f172a]/70 px-3 py-2.5">
+    <div className="rounded-lg border border-[#2e333d] bg-[#111317]/80 px-3 py-2.5">
       <div className="text-[12px] font-semibold text-muted">{label}</div>
       <div className="mt-0.5 font-mono text-[17px] font-bold text-ink tabular-nums">{value}</div>
     </div>
@@ -27,7 +27,7 @@ export function GameOverModal({ game, snap, onNewRound, onRetrySeed, onSpectate,
   const d = game.difficulty;
   return (
     <Modal onClose={onSpectate} dismissOnBackdrop={false} labelledBy="over-title" className="max-w-md">
-      <div className="relative border-b border-[#26334d] bg-[#171829] px-5 pt-5 pb-5 text-center">
+      <div className="relative border-b border-[#2e333d] px-5 pt-5 pb-5 text-center">
         <button
           type="button"
           className="btn btn-icon absolute top-3 right-3"

@@ -9,9 +9,9 @@ interface Props {
 
 function Item({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-[#26334d] bg-[#0f172a]/70 p-3">
+    <div className="flex items-start gap-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 p-3">
       <div
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#334669] bg-accent/10 text-accent"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#353b47] bg-mint/10 text-mint"
         aria-hidden="true"
       >
         {icon}
@@ -32,16 +32,13 @@ export function HelpModal({ onClose }: Props) {
 
   return (
     <Modal onClose={onClose} labelledBy="help-title" className="max-w-3xl">
-      <div className="border-b border-[#26334d] bg-[#151e30] px-5 pt-4 pb-4">
+      <div className="border-b border-[#2e333d] px-5 pt-4 pb-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <Gamepad2 size={22} className="text-accent" aria-hidden="true" />
+            <Gamepad2 size={21} className="text-mint" aria-hidden="true" />
             <h1 id="help-title" className="text-lg font-bold tracking-tight">
               How to play
             </h1>
-            <span className="rounded-full border border-mint/40 bg-mint/10 px-2.5 py-0.5 text-[12px] font-semibold text-mint">
-              Quick guide
-            </span>
           </div>
           <button type="button" className="btn btn-icon" onClick={close} aria-label="Close help">
             <X size={18} />
@@ -80,7 +77,7 @@ export function HelpModal({ onClose }: Props) {
         </Item>
       </div>
 
-      <div className="flex justify-end border-t border-[#26334d] bg-[#111827] px-5 py-3.5">
+      <div className="flex justify-end border-t border-[#2e333d] px-5 py-3.5">
         <button data-autofocus type="button" className="btn btn-primary" onClick={close}>
           Got it
         </button>

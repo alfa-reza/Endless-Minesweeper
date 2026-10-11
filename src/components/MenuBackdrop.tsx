@@ -116,7 +116,7 @@ export function MenuBackdrop({
 
   return (
     <div ref={wrapRef} className="absolute inset-0 overflow-hidden" aria-hidden="true">
-      <canvas ref={canvasRef} className="block h-full w-full opacity-55" />
+      <canvas ref={canvasRef} className="block h-full w-full opacity-90" />
     </div>
   );
 }

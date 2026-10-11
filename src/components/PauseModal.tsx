@@ -1,15 +1,14 @@
-import { Check, Copy, HelpCircle, Home, Play, RefreshCw, RotateCcw, SlidersHorizontal, Volume2, VolumeX, X } from "lucide-react";
+import { Check, Copy, HelpCircle, Home, Play, RefreshCw, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { sfx } from "../game/audio";
 import type { Game } from "../game/game";
+import { cn } from "../utils/cn";
 import { Modal } from "./Modal";
+import { SettingsPanel } from "./SettingsModal";
 
 interface Props {
   game: Game;
-  muted: boolean;
-  onToggleMute: () => void;
   onResume: () => void;
-  onSettings: () => void;
   onHelp: () => void;
   onNewRound: () => void;
   onRetrySeed: () => void;
@@ -18,15 +17,13 @@ interface Props {
 
 export function PauseModal({
   game,
-  muted,
-  onToggleMute,
   onResume,
-  onSettings,
   onHelp,
   onNewRound,
   onRetrySeed,
   onMenu,
 }: Props) {
+  const [tab, setTab] = useState<"game" | "settings">("game");
   const [copied, setCopied] = useState(false);
   const d = game.difficulty;
 
@@ -43,114 +40,141 @@ export function PauseModal({
 
   return (
     <Modal onClose={onResume} labelledBy="pause-title" className="max-w-md">
-      <div className="flex items-center justify-between border-b border-[#26334d] bg-[#151e30] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-[#2e333d] px-4 py-3.5">
         <div>
-          <h1 id="pause-title" className="text-xl font-bold tracking-tight">
+          <h1 id="pause-title" className="text-lg font-bold tracking-tight">
             Paused
           </h1>
-          <p className="text-[13px] text-muted">Timer is stopped</p>
+          <p className="text-[12.5px] text-muted">Timer is stopped</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-icon"
-          onClick={() => {
-            sfx.click();
-            onResume();
-          }}
-          aria-label="Resume game"
-        >
-          <X size={18} />
-        </button>
+
+        <div className="flex items-center gap-2">
+          <div role="tablist" aria-label="Pause sections" className="flex rounded-lg border border-[#2e333d] bg-[#111317] p-0.5">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "game"}
+              onClick={() => {
+                sfx.click();
+                setTab("game");
+              }}
+              className={cn(
+                "focus-ring min-h-[36px] cursor-pointer rounded-md px-3 text-[13px] font-semibold transition-colors",
+                tab === "game" ? "bg-[#232730] text-ink" : "text-muted hover:text-ink",
+              )}
+            >
+              Game
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "settings"}
+              onClick={() => {
+                sfx.click();
+                setTab("settings");
+              }}
+              className={cn(
+                "focus-ring flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold transition-colors",
+                tab === "settings" ? "bg-[#232730] text-ink" : "text-muted hover:text-ink",
+              )}
+            >
+              <SlidersHorizontal size={14} aria-hidden="true" /> Settings
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-icon"
+            onClick={() => {
+              sfx.click();
+              onResume();
+            }}
+            aria-label="Resume game"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-3.5 p-5">
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#26334d] bg-[#0f172a]/80 px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold tracking-wider text-muted uppercase">World seed</div>
-            <div className="mt-0.5 truncate font-mono text-[15px] font-bold tracking-wider text-ink">
-              {game.seedLabel}
+      <div className="thin-scroll max-h-[68dvh] overflow-y-auto p-4">
+        {tab === "game" ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 px-3.5 py-2.5">
+              <div className="min-w-0">
+                <div className="text-[11.5px] font-semibold tracking-wider text-muted uppercase">
+                  World seed
+                </div>
+                <div className="mt-0.5 truncate font-mono text-[15px] font-bold tracking-wider text-ink">
+                  {game.seedLabel}
+                </div>
+                <div className="mt-0.5 text-[12px] font-medium" style={{ color: d.accent }}>
+                  {d.name} · {Math.round(d.density * 100)}% mines
+                </div>
+              </div>
+              <button type="button" className="btn shrink-0" onClick={copy} aria-label="Copy seed">
+                {copied ? <Check size={16} className="text-mint" aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
             </div>
-            <div className="mt-0.5 text-[12px] font-medium" style={{ color: d.accent }}>
-              {d.name} · {Math.round(d.density * 100)}% mines
+
+            <button
+              data-autofocus
+              type="button"
+              className="btn btn-primary w-full py-2.5 text-[15px]"
+              onClick={() => {
+                sfx.click();
+                onResume();
+              }}
+            >
+              <Play size={17} fill="currentColor" aria-hidden="true" /> Resume
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  sfx.click();
+                  onNewRound();
+                }}
+              >
+                <RefreshCw size={15} aria-hidden="true" /> New world
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  sfx.click();
+                  onRetrySeed();
+                }}
+              >
+                <RotateCcw size={15} aria-hidden="true" /> Same seed
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  sfx.click();
+                  onHelp();
+                }}
+              >
+                <HelpCircle size={15} aria-hidden="true" /> How to play
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  sfx.click();
+                  onMenu();
+                }}
+              >
+                <Home size={15} aria-hidden="true" /> Main menu
+              </button>
             </div>
           </div>
-          <button type="button" className="btn shrink-0" onClick={copy} aria-label="Copy seed">
-            {copied ? <Check size={16} className="text-mint" aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-
-        <button
-          data-autofocus
-          type="button"
-          className="btn btn-primary w-full py-3 text-[15px]"
-          onClick={() => {
-            sfx.click();
-            onResume();
-          }}
-        >
-          <Play size={17} fill="currentColor" aria-hidden="true" /> Resume
-        </button>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              sfx.click();
-              onNewRound();
-            }}
-          >
-            <RefreshCw size={15} aria-hidden="true" /> New world
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              sfx.click();
-              onRetrySeed();
-            }}
-          >
-            <RotateCcw size={15} aria-hidden="true" /> Same seed
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              sfx.click();
-              onSettings();
-            }}
-          >
-            <SlidersHorizontal size={15} aria-hidden="true" /> Settings
-          </button>
-          <button type="button" className="btn" onClick={onToggleMute}>
-            {muted ? <VolumeX size={15} aria-hidden="true" /> : <Volume2 size={15} aria-hidden="true" />}
-            Sound {muted ? "off" : "on"}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              sfx.click();
-              onHelp();
-            }}
-          >
-            <HelpCircle size={15} aria-hidden="true" /> How to play
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => {
-              sfx.click();
-              onMenu();
-            }}
-          >
-            <Home size={15} aria-hidden="true" /> Main menu
-          </button>
-        </div>
+        ) : (
+          <SettingsPanel />
+        )}
       </div>
     </Modal>
   );
