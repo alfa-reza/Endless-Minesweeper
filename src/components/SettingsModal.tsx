@@ -1,4 +1,4 @@
-import { Eye, Hand, Music, SlidersHorizontal, Sparkles, Volume2, X } from "lucide-react";
+import { ExternalLink, Eye, Hand, Music, SlidersHorizontal, Sparkles, Volume2, X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { sfx } from "../game/audio";
 import { loadSave, patchSave, subscribeSave } from "../game/storage";
@@ -184,6 +184,21 @@ export function SettingsPanel() {
             );
           })}
         </div>
+      </div>
+
+      {/* GitHub repository & subtle open-source license */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#353b47] pt-3 text-[12.5px]">
+        <a
+          href="https://github.com/alfa-reza/Endless-Minesweeper"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => sfx.click()}
+          className="focus-ring inline-flex min-h-[36px] items-center gap-1.5 font-semibold text-ink underline-offset-4 hover:text-mint hover:underline"
+        >
+          <ExternalLink size={14} aria-hidden="true" />
+          GitHub Repository
+        </a>
+        <span className="text-[11px] text-muted/75">Open source · GPLv3</span>
       </div>
     </div>
   );
