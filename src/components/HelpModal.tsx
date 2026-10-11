@@ -1,5 +1,6 @@
-import { Flag, Gamepad2, Hand, Heart, Keyboard, Move, MousePointerClick, Sparkles, ZoomIn } from "lucide-react";
+import { Flag, Gamepad2, Hand, Heart, Keyboard, Move, MousePointerClick, Sparkles, X, ZoomIn } from "lucide-react";
 import type { ReactNode } from "react";
+import { sfx } from "../game/audio";
 import { Modal } from "./Modal";
 
 interface Props {
@@ -8,74 +9,79 @@ interface Props {
 
 function Item({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-[#2a3270]/60 bg-white/[0.03] p-3 transition hover:border-[#4655c4]/70 hover:bg-white/[0.05]">
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#3a45a8]/50 bg-linear-to-b from-accent/20 to-accent/5 text-accent">
+    <div className="flex items-start gap-3 rounded-xl border border-[#26334d] bg-[#0f172a]/70 p-3">
+      <div
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#334669] bg-accent/10 text-accent"
+        aria-hidden="true"
+      >
         {icon}
       </div>
       <div className="min-w-0">
-        <h4 className="text-[13.5px] font-bold text-ink">{title}</h4>
-        <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted/90">{children}</p>
+        <h2 className="text-[14px] font-bold text-ink">{title}</h2>
+        <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{children}</p>
       </div>
     </div>
   );
 }
 
 export function HelpModal({ onClose }: Props) {
+  const close = () => {
+    sfx.click();
+    onClose();
+  };
+
   return (
     <Modal onClose={onClose} labelledBy="help-title" className="max-w-3xl">
-      <div className="relative border-b border-[#2a3270]/60 bg-[radial-gradient(600px_100px_at_50%_0%,rgba(124,160,255,0.18),transparent_70%)] px-5 pt-5 pb-4">
-        <div className="flex items-center gap-3">
-          <Gamepad2 size={22} className="text-accent" />
-          <h2 id="help-title" className="text-lg font-bold tracking-tight">
-            How to play
-          </h2>
-          <span className="rounded-full border border-mint/30 bg-mint/10 px-2.5 py-0.5 text-[11px] font-semibold text-mint">
-            Quick reference
-          </span>
+      <div className="border-b border-[#26334d] bg-[#151e30] px-5 pt-4 pb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Gamepad2 size={22} className="text-accent" aria-hidden="true" />
+            <h1 id="help-title" className="text-lg font-bold tracking-tight">
+              How to play
+            </h1>
+            <span className="rounded-full border border-mint/40 bg-mint/10 px-2.5 py-0.5 text-[12px] font-semibold text-mint">
+              Quick guide
+            </span>
+          </div>
+          <button type="button" className="btn btn-icon" onClick={close} aria-label="Close help">
+            <X size={18} />
+          </button>
         </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-muted/90">
+        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
           The board never ends. Numbers tell you how many of the 8 surrounding tiles hide a mine. Open
-          safe tiles, flag the dangerous ones and see how far you can get — your first click is always
-          safe.
+          safe tiles, flag mines, and explore — your first click is always safe.
         </p>
       </div>
 
-      <div className="thin-scroll grid max-h-[68vh] gap-3 overflow-y-auto p-5 sm:grid-cols-2">
+      <div className="thin-scroll grid max-h-[62dvh] gap-3 overflow-y-auto p-5 sm:grid-cols-2">
         <Item icon={<MousePointerClick size={16} />} title="Dig a tile">
-          <span className="kbd">Left click</span> a hidden tile. Empty areas open up automatically.
+          <span className="kbd">Left click</span> or <span className="kbd">Enter</span> on a hidden tile. Empty areas open automatically.
         </Item>
         <Item icon={<Flag size={16} />} title="Place / remove a flag">
-          <span className="kbd">Right click</span> or press <span className="kbd">F</span> over a tile.
+          <span className="kbd">Right click</span> or press <span className="kbd">F</span> on the focused tile.
         </Item>
         <Item icon={<Sparkles size={16} />} title="Chord">
-          <span className="kbd">Left click</span> a number whose flag count matches it to open every
-          other neighbour at once. A wrong flag will cost you!
+          <span className="kbd">Click</span> or <span className="kbd">Enter</span> on a number whose flag count matches it to open all remaining neighbours.
         </Item>
         <Item icon={<ZoomIn size={16} />} title="Zoom">
-          <span className="kbd">Wheel</span>, trackpad pinch, or <span className="kbd">+</span>
-          <span className="kbd">−</span>.
+          <span className="kbd">Wheel</span>, pinch, <span className="kbd">+</span>/<span className="kbd">−</span>, or the on-screen zoom buttons.
         </Item>
-        <Item icon={<Move size={16} />} title="Pan the map">
-          <span className="kbd">Drag</span> with the mouse, hold <span className="kbd">Space</span> or
-          the middle button, or use <span className="kbd">W A S D</span> / arrows (
-          <span className="kbd">Shift</span> = fast).
+        <Item icon={<Move size={16} />} title="Pan &amp; keyboard cursor">
+          <span className="kbd">Drag</span> to pan, or move the tile cursor with <span className="kbd">W A S D</span> / <span className="kbd">Arrows</span>. Hold <span className="kbd">Shift</span> to pan fast.
         </Item>
         <Item icon={<Hand size={16} />} title="Touch screens">
-          Tap to dig, <b>long-press</b> to flag, drag to pan and pinch to zoom. Use the Dig / Flag
-          switch at the bottom to swap what a tap does.
+          Tap to dig, <b>long-press</b> (watch the ring) to flag, drag to pan, and pinch to zoom. Switch to Flag mode for safe one-tap flagging.
         </Item>
-        <Item icon={<Keyboard size={16} />} title="Shortcuts">
-          <span className="kbd">Esc</span> pause · <span className="kbd">C</span> re-centre ·{" "}
-          <span className="kbd">F</span> flag under cursor.
+        <Item icon={<Keyboard size={16} />} title="Shortcuts &amp; Gamepad">
+          <span className="kbd">Esc</span> / <span className="kbd">P</span> pause · <span className="kbd">C</span> re-centre. Gamepad D-pad + A/X supported.
         </Item>
-        <Item icon={<Heart size={16} fill="currentColor" />} title="Lives & score">
-          Easy and Normal give you extra lives. Every tile you open scores points (bigger numbers are
-          worth more), multiplied by the difficulty. Your best score is saved.
+        <Item icon={<Heart size={16} fill="currentColor" />} title="Lives &amp; score">
+          Easy and Normal grant extra lives. Higher numbers and higher difficulties multiply your score.
         </Item>
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-[#2a3270]/60 bg-white/[0.02] px-5 py-3.5">
-        <button data-autofocus className="btn btn-primary" onClick={onClose}>
+      <div className="flex justify-end border-t border-[#26334d] bg-[#111827] px-5 py-3.5">
+        <button data-autofocus type="button" className="btn btn-primary" onClick={close}>
           Got it
         </button>
       </div>

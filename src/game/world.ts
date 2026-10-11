@@ -243,17 +243,19 @@ export class World {
   }
 
   /** Returns true when a flag was placed, false when removed, null if impossible. */
-  toggleFlag(x: number, y: number): boolean | null {
+  toggleFlag(x: number, y: number, stamp = 0): boolean | null {
     const c = this.ensureChunk(x >> CHUNK_SHIFT, y >> CHUNK_SHIFT);
     const i = ((y & CHUNK_MASK) << CHUNK_SHIFT) | (x & CHUNK_MASK);
     const s = c.state[i];
     if (s === HIDDEN) {
       c.state[i] = FLAGGED;
+      c.stamp[i] = stamp;
       this.flagsTotal++;
       return true;
     }
     if (s === FLAGGED) {
       c.state[i] = HIDDEN;
+      c.stamp[i] = 0;
       this.flagsTotal--;
       return false;
     }

@@ -1,9 +1,9 @@
 import { memo, useEffect, useRef, type MutableRefObject } from "react";
 import { sfx } from "../game/audio";
 import type { Camera } from "../game/camera";
-import { DEFAULT_CELL } from "../game/config";
+import { defaultCellSize, minCellSize } from "../game/config";
 import type { Game } from "../game/game";
-import { renderWorld } from "../game/renderer";
+import { EffectsPool, renderWorld, type PressIndicator } from "../game/renderer";
 import { REVEALED } from "../game/world";
 
 export type Tool = "dig" | "flag";
@@ -14,22 +14,71 @@ interface Props {
   camera: Camera;
   tool: Tool;
   inputEnabled: boolean;
+  coarse: boolean;
+  longPressMs: number;
+  haptics: boolean;
+  highContrast: boolean;
+  reduceMotion: boolean;
   hoverRef: MutableRefObject<Cell | null>;
+  effects: EffectsPool;
+  onHoverChange: () => void;
+  onPauseRequest: () => void;
 }
 
 type Mode = "idle" | "press" | "pan" | "pinch";
 
 const MOUSE_DRAG_THRESHOLD = 5;
-const TOUCH_DRAG_THRESHOLD = 9;
-const LONG_PRESS_MS = 420;
+const TOUCH_DRAG_THRESHOLD = 10;
 
-function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
+function GameCanvasImpl({
+  game,
+  camera,
+  tool,
+  inputEnabled,
+  coarse,
+  longPressMs,
+  haptics,
+  highContrast,
+  reduceMotion,
+  hoverRef,
+  effects,
+  onHoverChange,
+  onPauseRequest,
+}: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Latest props for event handlers living inside effects.
-  const live = useRef({ tool, inputEnabled });
-  live.current = { tool, inputEnabled };
+  const live = useRef({
+    tool,
+    inputEnabled,
+    coarse,
+    longPressMs,
+    haptics,
+    highContrast,
+    reduceMotion,
+    onHoverChange,
+    onPauseRequest,
+  });
+  live.current = {
+    tool,
+    inputEnabled,
+    coarse,
+    longPressMs,
+    haptics,
+    highContrast,
+    reduceMotion,
+    onHoverChange,
+    onPauseRequest,
+  };
+
+  useEffect(() => {
+    camera.size = camera.target = defaultCellSize(coarse);
+    camera.setMinSize(minCellSize(coarse));
+  }, [camera, coarse]);
+
+  useEffect(() => {
+    camera.dirty = true;
+  }, [camera, highContrast, reduceMotion]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -39,7 +88,6 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     let raf = 0;
     let disposed = false;
 
-    // ---------- sizing ----------
     const resize = () => {
       const w = Math.max(1, wrap.clientWidth);
       const h = Math.max(1, wrap.clientHeight);
@@ -54,7 +102,6 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    // Redraw once the numeric font is available.
     document.fonts
       ?.load('700 16px "JetBrains Mono"')
       .then(() => {
@@ -66,6 +113,8 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     const pointers = new Map<number, { x: number; y: number }>();
     const mouse = { x: 0, y: 0, inside: false };
     const keys = new Set<string>();
+    let cursor: Cell | null = null;
+    let activePress: { x: number; y: number; startAt: number; isTouch: boolean } | null = null;
     let spaceDown = false;
     let fast = false;
     let mode: Mode = "idle";
@@ -81,13 +130,17 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     let pinchMidX = 0;
     let pinchMidY = 0;
 
-    const setCursor = () => {
+    // Gamepad state
+    let lastGpMove = 0;
+    let prevGpButtons: boolean[] = [];
+
+    const setCursorStyle = () => {
       if (!live.current.inputEnabled) canvas.style.cursor = "default";
       else if (mode === "pan") canvas.style.cursor = "grabbing";
       else if (spaceDown) canvas.style.cursor = "grab";
       else canvas.style.cursor = "crosshair";
     };
-    setCursor();
+    setCursorStyle();
 
     const local = (e: PointerEvent | WheelEvent) => {
       const r = canvas.getBoundingClientRect();
@@ -97,7 +150,7 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     const doFlag = (x: number, y: number) => game.toggleFlag(x, y);
     const doDig = (x: number, y: number) => game.reveal(x, y);
 
-    /** Primary action for a tap / left click. */
+    /** Primary action for tap / left click. */
     const primary = (sx: number, sy: number) => {
       const c = camera.screenToCell(sx, sy);
       if (live.current.tool === "flag" && game.world.getState(c.x, c.y) !== REVEALED) {
@@ -106,21 +159,36 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         doDig(c.x, c.y);
       }
     };
-    /** Secondary action: right click / long press. */
+
+    /** Secondary action: right-click always toggles flag; touch long-press toggles flag safely (never digs in Flag mode!). */
     const secondary = (sx: number, sy: number) => {
       const c = camera.screenToCell(sx, sy);
-      if (pointerType !== "mouse" && live.current.tool === "flag") doDig(c.x, c.y);
-      else doFlag(c.x, c.y);
+      doFlag(c.x, c.y);
     };
 
     const clearLong = () => {
       if (longTimer) window.clearTimeout(longTimer);
       longTimer = 0;
+      if (activePress) {
+        activePress = null;
+        camera.dirty = true;
+      }
+    };
+
+    const moveTileCursor = (dx: number, dy: number) => {
+      if (!cursor) {
+        cursor = { x: Math.floor(camera.cx), y: Math.floor(camera.cy) };
+      } else {
+        cursor = { x: cursor.x + dx, y: cursor.y + dy };
+      }
+      camera.ensureCellVisible(cursor.x, cursor.y, 2);
+      camera.dirty = true;
     };
 
     const onPointerDown = (e: PointerEvent) => {
       if (!live.current.inputEnabled) return;
       sfx.unlock();
+      cursor = null;
       canvas.setPointerCapture(e.pointerId);
       const p = local(e);
       pointers.set(e.pointerId, p);
@@ -148,16 +216,23 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         camera.cancelFlight();
       } else {
         mode = "press";
-        if (e.pointerType !== "mouse") {
+        const cell = camera.screenToCell(p.x, p.y);
+        const isTouch = e.pointerType !== "mouse";
+        activePress = { x: cell.x, y: cell.y, startAt: performance.now(), isTouch };
+        camera.dirty = true;
+
+        if (isTouch) {
           longTimer = window.setTimeout(() => {
             if (mode !== "press") return;
             longFired = true;
-            navigator.vibrate?.(18);
+            activePress = null;
+            if (live.current.haptics) navigator.vibrate?.(18);
             secondary(startX, startY);
-          }, LONG_PRESS_MS);
+            camera.dirty = true;
+          }, live.current.longPressMs);
         }
       }
-      setCursor();
+      setCursorStyle();
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -166,6 +241,10 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         mouse.x = p.x;
         mouse.y = p.y;
         mouse.inside = true;
+        if (cursor) {
+          cursor = null;
+          camera.dirty = true;
+        }
       }
       if (!pointers.has(e.pointerId)) return;
       pointers.set(e.pointerId, p);
@@ -189,7 +268,7 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
           clearLong();
           mode = "pan";
           camera.cancelFlight();
-          setCursor();
+          setCursorStyle();
         }
       }
       if (mode === "pan") {
@@ -214,7 +293,7 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         } else if (pointers.size === 0) {
           mode = "idle";
         }
-        setCursor();
+        setCursorStyle();
         return;
       }
 
@@ -224,14 +303,14 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         else if (button === 0) primary(p.x, p.y);
       }
       mode = "idle";
-      setCursor();
+      setCursorStyle();
     };
 
     const onPointerCancel = (e: PointerEvent) => {
       pointers.delete(e.pointerId);
       clearLong();
       mode = pointers.size > 0 ? "pan" : "idle";
-      setCursor();
+      setCursorStyle();
     };
 
     const onPointerLeave = (e: PointerEvent) => {
@@ -253,39 +332,61 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (typing(e.target)) return;
+      // Fix: never hijack Space or keys when a modal/overlay is open!
+      if (!live.current.inputEnabled || typing(e.target)) return;
+      sfx.unlock();
+
       fast = e.shiftKey;
       if (e.code === "Space") {
         e.preventDefault();
         if (!spaceDown) {
           spaceDown = true;
-          setCursor();
+          setCursorStyle();
         }
         return;
       }
-      if (!live.current.inputEnabled || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
       const k = e.key.toLowerCase();
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(k)) {
         e.preventDefault();
-        keys.add(k);
+        if (e.shiftKey) {
+          keys.add(k);
+        } else {
+          // Tile-by-tile cursor navigation for keyboard-only play
+          if (k === "arrowleft" || k === "a") moveTileCursor(-1, 0);
+          else if (k === "arrowright" || k === "d") moveTileCursor(1, 0);
+          else if (k === "arrowup" || k === "w") moveTileCursor(0, -1);
+          else if (k === "arrowdown" || k === "s") moveTileCursor(0, 1);
+        }
+      } else if (e.key === "Enter" && !e.repeat) {
+        e.preventDefault();
+        const target = cursor ?? (mouse.inside ? camera.screenToCell(mouse.x, mouse.y) : { x: Math.floor(camera.cx), y: Math.floor(camera.cy) });
+        cursor = target;
+        if (live.current.tool === "flag" && game.world.getState(target.x, target.y) !== REVEALED) {
+          doFlag(target.x, target.y);
+        } else {
+          doDig(target.x, target.y);
+        }
       } else if (k === "+" || k === "=") {
         camera.zoomAt(camera.viewW / 2, camera.viewH / 2, 1.3);
       } else if (k === "-" || k === "_") {
         camera.zoomAt(camera.viewW / 2, camera.viewH / 2, 1 / 1.3);
-      } else if (k === "f" && mouse.inside && !e.repeat) {
-        const c = camera.screenToCell(mouse.x, mouse.y);
-        doFlag(c.x, c.y);
+      } else if (k === "f" && !e.repeat) {
+        const target = cursor ?? (mouse.inside ? camera.screenToCell(mouse.x, mouse.y) : null);
+        if (target) doFlag(target.x, target.y);
       } else if (k === "c" && !e.repeat) {
-        camera.flyTo(0.5, 0.5, DEFAULT_CELL);
+        cursor = { x: 0, y: 0 };
+        camera.flyTo(0.5, 0.5, defaultCellSize(live.current.coarse));
       }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
       fast = e.shiftKey;
       if (e.code === "Space") {
-        e.preventDefault();
+        if (live.current.inputEnabled) e.preventDefault();
         spaceDown = false;
-        setCursor();
+        setCursorStyle();
       }
       keys.delete(e.key.toLowerCase());
     };
@@ -293,7 +394,8 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     const onBlur = () => {
       keys.clear();
       spaceDown = false;
-      setCursor();
+      clearLong();
+      setCursorStyle();
     };
 
     const noMenu = (e: Event) => e.preventDefault();
@@ -315,12 +417,59 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
     let animating = false;
     let lastInput = live.current.inputEnabled;
 
+    const pollGamepad = (now: number, dt: number) => {
+      const pads = navigator.getGamepads?.();
+      if (!pads) return;
+      const gp = pads.find((p): p is Gamepad => !!p && p.connected);
+      if (!gp) return;
+
+      const pressed = (idx: number) => !!gp.buttons[idx]?.pressed;
+      const edge = (idx: number) => pressed(idx) && !prevGpButtons[idx];
+
+      if (edge(9)) live.current.onPauseRequest();
+
+      if (live.current.inputEnabled) {
+        // Right stick pans camera
+        const rx = Math.abs(gp.axes[2] ?? 0) > 0.2 ? gp.axes[2] : 0;
+        const ry = Math.abs(gp.axes[3] ?? 0) > 0.2 ? gp.axes[3] : 0;
+        if (rx || ry) camera.panBy(-rx * 650 * (dt / 1000), -ry * 650 * (dt / 1000));
+
+        // D-pad / Left stick moves tile cursor
+        let mx = 0;
+        let my = 0;
+        if (pressed(14) || (gp.axes[0] ?? 0) < -0.5) mx = -1;
+        else if (pressed(15) || (gp.axes[0] ?? 0) > 0.5) mx = 1;
+        if (pressed(12) || (gp.axes[1] ?? 0) < -0.5) my = -1;
+        else if (pressed(13) || (gp.axes[1] ?? 0) > 0.5) my = 1;
+        if ((mx !== 0 || my !== 0) && now - lastGpMove > 145) {
+          lastGpMove = now;
+          moveTileCursor(mx, my);
+        }
+
+        if (edge(0)) {
+          sfx.unlock();
+          const target = cursor ?? { x: Math.floor(camera.cx), y: Math.floor(camera.cy) };
+          cursor = target;
+          doDig(target.x, target.y);
+        }
+        if (edge(2) || edge(1)) {
+          sfx.unlock();
+          const target = cursor ?? { x: Math.floor(camera.cx), y: Math.floor(camera.cy) };
+          cursor = target;
+          doFlag(target.x, target.y);
+        }
+        if (edge(4)) camera.zoomAt(camera.viewW / 2, camera.viewH / 2, 1 / 1.25);
+        if (edge(5)) camera.zoomAt(camera.viewW / 2, camera.viewH / 2, 1.25);
+      }
+
+      prevGpButtons = gp.buttons.map((b) => b.pressed);
+    };
+
     const frame = (now: number) => {
       if (disposed) return;
       const dt = Math.min(64, now - lastTime);
       lastTime = now;
 
-      // keyboard panning
       if (keys.size > 0 && live.current.inputEnabled) {
         const speed = (fast ? 1100 : 620) * (dt / 1000);
         let dx = 0;
@@ -332,15 +481,15 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
         if (dx || dy) camera.panBy(dx, dy);
       }
 
-      camera.update(now);
+      pollGamepad(now, dt);
+      camera.update(now, live.current.reduceMotion);
 
       if (lastInput !== live.current.inputEnabled) {
         lastInput = live.current.inputEnabled;
-        setCursor();
+        setCursorStyle();
         camera.dirty = true;
       }
 
-      // hover cell tracking (mouse only)
       const hover = hoverRef.current;
       let nextHover: Cell | null = null;
       if (mouse.inside && live.current.inputEnabled && !game.isOver()) {
@@ -348,18 +497,35 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
       }
       if (nextHover?.x !== hover?.x || nextHover?.y !== hover?.y) {
         hoverRef.current = nextHover;
+        live.current.onHoverChange();
         camera.dirty = true;
       }
 
-      if (camera.dirty || animating || game.version !== lastVersion) {
+      let press: PressIndicator | null = null;
+      if (activePress) {
+        press = {
+          x: activePress.x,
+          y: activePress.y,
+          progress: Math.min(1, (now - activePress.startAt) / live.current.longPressMs),
+          isTouch: activePress.isTouch,
+        };
+      }
+
+      if (camera.dirty || animating || press || game.version !== lastVersion) {
         camera.dirty = false;
         lastVersion = game.version;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         animating = renderWorld(ctx, game.world, camera, {
           now,
           hover: hoverRef.current,
+          cursor: live.current.inputEnabled ? cursor : null,
+          press,
           gameOver: game.isOver(),
           explodedAt: game.explodedAt,
+          highContrast: live.current.highContrast,
+          reduceMotion: live.current.reduceMotion,
+          effects,
+          showStartBeacon: game.status === "ready",
         });
       }
       raf = requestAnimationFrame(frame);
@@ -382,7 +548,7 @@ function GameCanvasImpl({ game, camera, tool, inputEnabled, hoverRef }: Props) {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [game, camera, hoverRef]);
+  }, [game, camera, hoverRef, effects]);
 
   return (
     <div ref={wrapRef} className="absolute inset-0 overflow-hidden">

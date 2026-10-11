@@ -1,5 +1,6 @@
 import { Flag, Minus, Pickaxe, Plus } from "lucide-react";
-import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { useEffect, useState, type MutableRefObject, type ReactNode } from "react";
+import { sfx } from "../game/audio";
 import type { Camera } from "../game/camera";
 import { DEFAULT_CELL } from "../game/config";
 import { cn } from "../utils/cn";
@@ -9,12 +10,18 @@ import type { Cell, Tool } from "./GameCanvas";
 export function ToolSwitch({ tool, onChange }: { tool: Tool; onChange: (t: Tool) => void }) {
   const opt = (id: Tool, label: string, icon: ReactNode, active: string) => (
     <button
+      type="button"
       role="radio"
       aria-checked={tool === id}
-      onClick={() => onChange(id)}
+      onClick={() => {
+        if (tool !== id) {
+          sfx.click();
+          onChange(id);
+        }
+      }}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all duration-150 select-none",
-        tool === id ? active : "text-muted/70 hover:bg-white/5 hover:text-ink",
+        "focus-ring flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[14px] font-bold transition-colors duration-150 select-none touch-manipulation",
+        tool === id ? active : "text-muted hover:bg-white/5 hover:text-ink",
       )}
     >
       {icon}
@@ -22,54 +29,102 @@ export function ToolSwitch({ tool, onChange }: { tool: Tool; onChange: (t: Tool)
     </button>
   );
   return (
-    <div role="radiogroup" aria-label="Tap action" className="glass flex gap-1 rounded-2xl p-1">
-      {opt("dig", "Dig", <Pickaxe size={16} />, "bg-accent/90 text-[#0b0e22] shadow-[0_4px_18px_rgba(122,162,255,0.45)]")}
-      {opt("flag", "Flag", <Flag size={16} />, "bg-flag text-[#2a1a00] shadow-[0_4px_18px_rgba(255,175,56,0.4)]")}
+    <div role="radiogroup" aria-label="Tap action" className="surface flex gap-1.5 rounded-2xl p-1">
+      {opt("dig", "Dig", <Pickaxe size={16} aria-hidden="true" />, "bg-accent text-[#04101f] shadow-sm")}
+      {opt("flag", "Flag", <Flag size={16} aria-hidden="true" />, "bg-flag text-[#1f1300] shadow-sm")}
     </div>
   );
 }
 
-/** Cursor / centre coordinates and zoom buttons. */
+/** Compact zoom controls for touch / one-handed mobile play. */
+export function MobileZoomControls({ camera }: { camera: Camera }) {
+  const zoom = (f: number) => {
+    sfx.click();
+    camera.zoomAt(camera.viewW / 2, camera.viewH / 2, f);
+  };
+  return (
+    <div className="surface flex items-center gap-1 rounded-2xl p-1 sm:hidden">
+      <button
+        type="button"
+        className="btn btn-icon"
+        onClick={() => zoom(1 / 1.25)}
+        aria-label="Zoom out"
+        title="Zoom out"
+      >
+        <Minus size={18} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className="btn btn-icon"
+        onClick={() => zoom(1.25)}
+        aria-label="Zoom in"
+        title="Zoom in"
+      >
+        <Plus size={18} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/** Cursor / centre coordinates and zoom buttons (event-driven via camera subscription). */
 export function ViewReadout({
   camera,
   hoverRef,
+  subscribeHover,
 }: {
   camera: Camera;
   hoverRef: MutableRefObject<Cell | null>;
+  subscribeHover: (fn: () => void) => () => void;
 }) {
-  const [text, setText] = useState("");
-  const last = useRef("");
+  const format = () => {
+    const c = hoverRef.current ?? {
+      x: Math.floor(camera.cx),
+      y: Math.floor(camera.cy),
+    };
+    const zoom = Math.round((camera.size / DEFAULT_CELL) * 100);
+    return `${c.x}, ${c.y}  ·  ${zoom}%`;
+  };
+
+  const [text, setText] = useState(format);
 
   useEffect(() => {
-    const tick = () => {
-      const c = hoverRef.current ?? {
-        x: Math.floor(camera.cx),
-        y: Math.floor(camera.cy),
-      };
-      const zoom = Math.round((camera.size / DEFAULT_CELL) * 100);
-      const next = `${c.x}, ${c.y}  ·  ${zoom}%`;
-      if (next !== last.current) {
-        last.current = next;
-        setText(next);
-      }
+    const update = () => setText(format());
+    update();
+    const unsubCam = camera.subscribe(update);
+    const unsubHover = subscribeHover(update);
+    return () => {
+      unsubCam();
+      unsubHover();
     };
-    tick();
-    const id = window.setInterval(tick, 90);
-    return () => window.clearInterval(id);
-  }, [camera, hoverRef]);
+  }, [camera, subscribeHover]);
 
-  const zoom = (f: number) => camera.zoomAt(camera.viewW / 2, camera.viewH / 2, f);
+  const zoom = (f: number) => {
+    sfx.click();
+    camera.zoomAt(camera.viewW / 2, camera.viewH / 2, f);
+  };
 
   return (
-    <div className="glass flex items-center gap-1 rounded-2xl p-1">
-      <button className="btn btn-icon !h-9 !w-9" onClick={() => zoom(1 / 1.3)} aria-label="Zoom out" title="Zoom out (−)">
-        <Minus size={16} />
+    <div className="surface flex items-center gap-1 rounded-2xl p-1">
+      <button
+        type="button"
+        className="btn btn-icon"
+        onClick={() => zoom(1 / 1.3)}
+        aria-label="Zoom out"
+        title="Zoom out (−)"
+      >
+        <Minus size={17} aria-hidden="true" />
       </button>
-      <div className="min-w-[116px] px-2 text-center font-mono text-[12px] whitespace-pre text-muted/85 tabular-nums">
+      <div className="min-w-[120px] px-2 text-center font-mono text-[12.5px] whitespace-pre text-ink/90 tabular-nums">
         {text}
       </div>
-      <button className="btn btn-icon !h-9 !w-9" onClick={() => zoom(1.3)} aria-label="Zoom in" title="Zoom in (+)">
-        <Plus size={16} />
+      <button
+        type="button"
+        className="btn btn-icon"
+        onClick={() => zoom(1.3)}
+        aria-label="Zoom in"
+        title="Zoom in (+)"
+      >
+        <Plus size={17} aria-hidden="true" />
       </button>
     </div>
   );

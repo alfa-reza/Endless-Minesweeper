@@ -5,14 +5,15 @@ import { HIDDEN, REVEALED, World, seedFromString } from "./world";
 export type Status = "ready" | "playing" | "over";
 
 export type GameEvent =
-  | { type: "reveal"; cells: number }
-  | { type: "chord" }
-  | { type: "flag"; placed: boolean }
+  | { type: "reveal"; cells: number; x: number; y: number; points: number }
+  | { type: "chord"; cells: number; x: number; y: number; points: number }
+  | { type: "flag"; placed: boolean; x: number; y: number }
   | { type: "boom"; x: number; y: number; livesLeft: number }
   | { type: "gameover"; record: boolean };
 
 export interface Snapshot {
   status: Status;
+  running: boolean;
   score: number;
   best: number;
   revealed: number;
@@ -24,7 +25,7 @@ export interface Snapshot {
   record: boolean;
 }
 
-const WAVE_MS = 34;
+const WAVE_MS = 28;
 
 export class Game {
   readonly world: World;
@@ -72,6 +73,7 @@ export class Game {
   private makeSnapshot(): Snapshot {
     return {
       status: this.status,
+      running: this.running,
       score: this.score,
       best: Math.max(this.best, this.score),
       revealed: this.world.revealedTotal,
@@ -103,12 +105,14 @@ export class Game {
     if (!this.running) return;
     this.accumulated += performance.now() - this.startedAt;
     this.running = false;
+    this.changed();
   }
 
   resume() {
     if (this.running || this.status !== "playing") return;
     this.startedAt = performance.now();
     this.running = true;
+    this.changed();
   }
 
   // ---- actions ----
@@ -119,9 +123,11 @@ export class Game {
     this.running = true;
   }
 
-  private addPoints(points: number, maxDist: number) {
-    this.score += points * this.difficulty.multiplier;
+  private addPoints(points: number, maxDist: number): number {
+    const gained = points * this.difficulty.multiplier;
+    this.score += gained;
     if (maxDist > this.maxDist) this.maxDist = maxDist;
+    return gained;
   }
 
   private hitMine(x: number, y: number) {
@@ -150,8 +156,8 @@ export class Game {
       this.hitMine(x, y);
     } else {
       const res = this.world.flood(x, y, performance.now(), WAVE_MS);
-      this.addPoints(res.points, res.maxDist);
-      this.emit({ type: "reveal", cells: res.cells });
+      const gained = this.addPoints(res.points, res.maxDist);
+      this.emit({ type: "reveal", cells: res.cells, x, y, points: gained });
     }
     this.changed();
   }
@@ -163,6 +169,7 @@ export class Game {
     if (n <= 0 || this.world.flagsAround(x, y) !== n) return;
 
     let opened = 0;
+    let gained = 0;
     let hit = false;
     for (const [dx, dy] of this.world.neighbors()) {
       const nx = x + dx;
@@ -174,19 +181,21 @@ export class Game {
         if (this.isOver()) break;
       } else {
         const res = this.world.flood(nx, ny, performance.now(), WAVE_MS);
-        this.addPoints(res.points, res.maxDist);
+        gained += this.addPoints(res.points, res.maxDist);
         opened += res.cells;
       }
     }
-    if (opened > 0) this.emit({ type: hit ? "reveal" : "chord", cells: opened });
+    if (opened > 0) {
+      this.emit({ type: hit ? "reveal" : "chord", cells: opened, x, y, points: gained });
+    }
     this.changed();
   }
 
   toggleFlag(x: number, y: number) {
     if (this.status === "over") return;
-    const placed = this.world.toggleFlag(x, y);
+    const placed = this.world.toggleFlag(x, y, performance.now());
     if (placed === null) return;
-    this.emit({ type: "flag", placed });
+    this.emit({ type: "flag", placed, x, y });
     this.changed();
   }
 
@@ -213,7 +222,9 @@ export class Game {
 
   private finish() {
     if (this.status === "over") return;
-    this.pause();
+    this.running = false;
+    this.accumulated += this.startedAt ? performance.now() - this.startedAt : 0;
+    this.startedAt = 0;
     this.status = "over";
     this.commit();
     this.emit({ type: "gameover", record: this.record });
@@ -221,7 +232,10 @@ export class Game {
 
   /** Called when the player leaves mid-run (e.g. back to menu). */
   dispose() {
-    this.pause();
+    if (this.running) {
+      this.accumulated += performance.now() - this.startedAt;
+      this.running = false;
+    }
     if (this.status !== "ready") this.commit();
   }
 

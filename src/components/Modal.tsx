@@ -8,83 +8,71 @@ interface ModalProps {
   dismissOnBackdrop?: boolean;
   labelledBy?: string;
   className?: string;
-  /** Extra classes for the backdrop (e.g. to let clicks through). */
-  backdropClassName?: string;
 }
 
-/** Accessible modal: Esc to close, focus trap, restores focus on close. */
+/** Native <dialog> modal: top-layer, inert background, Esc/back dismissal, focus return. */
 export function Modal({
   children,
   onClose,
   dismissOnBackdrop = true,
   labelledBy,
   className,
-  backdropClassName,
 }: ModalProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
-    const card = cardRef.current!;
-    const focusables = () =>
-      Array.from(
-        card.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-    const target = card.querySelector<HTMLElement>("[data-autofocus]") ?? focusables()[0];
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+
+    const target = dialog.querySelector<HTMLElement>("[data-autofocus]");
     target?.focus({ preventScroll: true });
 
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.repeat) {
-        e.preventDefault();
+    // Light-dismiss fallback for browsers without <dialog closedby="any">
+    let pressedOutside = false;
+    const isOutside = (e: PointerEvent) => {
+      const r = dialog.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    };
+    const onPointerDown = (e: PointerEvent) => {
+      pressedOutside = dismissOnBackdrop && isOutside(e);
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (dismissOnBackdrop && pressedOutside && isOutside(e)) {
         closeRef.current?.();
-        return;
       }
-      if (e.key !== "Tab") return;
-      const list = focusables();
-      if (!list.length) return;
-      const first = list[0];
-      const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      pressedOutside = false;
     };
-    window.addEventListener("keydown", onKey);
+
+    const supportsClosedBy = "closedBy" in HTMLDialogElement.prototype;
+    if (!supportsClosedBy && dismissOnBackdrop) {
+      dialog.addEventListener("pointerdown", onPointerDown);
+      dialog.addEventListener("pointerup", onPointerUp);
+    }
+
     return () => {
-      window.removeEventListener("keydown", onKey);
-      if (prev && document.contains(prev)) prev.focus({ preventScroll: true });
+      if (!supportsClosedBy && dismissOnBackdrop) {
+        dialog.removeEventListener("pointerdown", onPointerDown);
+        dialog.removeEventListener("pointerup", onPointerUp);
+      }
+      if (dialog.open) dialog.close();
     };
-  }, []);
+  }, [dismissOnBackdrop]);
 
   return (
-    <div
-      className={cn(
-        "animate-fade fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[radial-gradient(1000px_700px_at_50%_15%,rgba(124,160,255,0.12),rgba(0,0,0,0.62))] p-3 backdrop-blur-[3px]",
-        backdropClassName,
-      )}
-      onPointerDown={(e) => {
-        if (dismissOnBackdrop && e.target === e.currentTarget) onClose?.();
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={labelledBy}
+      {...({ closedby: dismissOnBackdrop ? "any" : "closerequest" } as Record<string, string>)}
+      onCancel={(e) => {
+        e.preventDefault();
+        closeRef.current?.();
       }}
+      className={cn("modal-dialog animate-pop w-full max-w-lg", className)}
     >
-      <div
-        ref={cardRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={labelledBy}
-        className={cn(
-          "animate-pop glass w-full max-w-lg overflow-hidden rounded-3xl bg-linear-to-b from-[#151a3a]/90 to-[#0b0f24]/90 shadow-[0_30px_100px_rgba(0,0,0,0.55)]",
-          className,
-        )}
-      >
-        {children}
-      </div>
-    </div>
+      {children}
+    </dialog>
   );
 }

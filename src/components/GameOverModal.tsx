@@ -1,5 +1,6 @@
-import { Bomb, Eye, Home, RefreshCw, RotateCcw, Trophy } from "lucide-react";
+import { Bomb, Eye, Home, RefreshCw, RotateCcw, Trophy, X } from "lucide-react";
 import type { ReactNode } from "react";
+import { sfx } from "../game/audio";
 import type { Game, Snapshot } from "../game/game";
 import { fmtNum, fmtTime } from "../utils/format";
 import { Modal } from "./Modal";
@@ -13,11 +14,11 @@ interface Props {
   onMenu: () => void;
 }
 
-function Cell({ label, value }: { label: string; value: ReactNode }) {
+function StatCell({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-[#2a3270]/60 bg-white/[0.03] px-3 py-2.5">
-      <div className="text-[10px] font-bold tracking-[0.16em] text-muted/55 uppercase">{label}</div>
-      <div className="mt-1 font-mono text-[17px] font-bold text-ink tabular-nums">{value}</div>
+    <div className="rounded-xl border border-[#26334d] bg-[#0f172a]/70 px-3 py-2.5">
+      <div className="text-[12px] font-semibold text-muted">{label}</div>
+      <div className="mt-0.5 font-mono text-[17px] font-bold text-ink tabular-nums">{value}</div>
     </div>
   );
 }
@@ -26,60 +27,107 @@ export function GameOverModal({ game, snap, onNewRound, onRetrySeed, onSpectate,
   const d = game.difficulty;
   return (
     <Modal onClose={onSpectate} dismissOnBackdrop={false} labelledBy="over-title" className="max-w-md">
-      <div className="relative border-b border-[#2a3270]/60 bg-[radial-gradient(500px_140px_at_50%_0%,rgba(255,107,107,0.22),transparent_70%)] px-5 pt-6 pb-5 text-center">
+      <div className="relative border-b border-[#26334d] bg-[#171829] px-5 pt-5 pb-5 text-center">
+        <button
+          type="button"
+          className="btn btn-icon absolute top-3 right-3"
+          onClick={() => {
+            sfx.click();
+            onSpectate();
+          }}
+          aria-label="Spectate board"
+        >
+          <X size={18} />
+        </button>
+
         <div
-          className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-danger/40 bg-danger/15 text-danger shadow-[0_0_34px_rgba(255,107,107,0.35)]"
+          className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-danger/45 bg-danger/15 text-danger"
           aria-hidden="true"
         >
-          <Bomb size={28} />
+          <Bomb size={24} />
         </div>
-        <h2 id="over-title" className="mt-1 text-2xl font-bold tracking-tight text-danger">
+        <h1 id="over-title" className="mt-2 text-2xl font-bold tracking-tight text-danger">
           You hit a mine
-        </h2>
-        <p className="mt-1 text-[13px] text-muted/80">
+        </h1>
+        <p className="mt-1 text-[13.5px] text-muted">
           {snap.revealed > 0
             ? `You cleared ${fmtNum(snap.revealed)} tiles on ${d.name}.`
             : "That was a rough start."}
         </p>
 
         <div className="mt-4 inline-flex flex-col items-center">
-          <span className="text-[10px] font-bold tracking-[0.2em] text-muted/55 uppercase">Final score</span>
-          <span className="font-mono text-5xl font-bold text-ink tabular-nums">{fmtNum(snap.score)}</span>
+          <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">Final score</span>
+          <span className="font-mono text-4xl font-bold text-ink tabular-nums sm:text-5xl">
+            {fmtNum(snap.score)}
+          </span>
           {snap.record ? (
-            <span className="animate-ring mt-2 inline-flex items-center gap-1.5 rounded-full border border-mint/40 bg-mint/10 px-3 py-1 text-[12px] font-bold text-mint">
-              <Trophy size={13} /> New personal best!
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-mint/45 bg-mint/15 px-3 py-1 text-[12.5px] font-bold text-mint">
+              <Trophy size={14} aria-hidden="true" /> New personal best!
             </span>
           ) : (
-            <span className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-flag/90">
-              <Trophy size={13} /> Best: {fmtNum(snap.best)}
+            <span className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-flag">
+              <Trophy size={14} aria-hidden="true" /> Best: {fmtNum(snap.best)}
             </span>
           )}
         </div>
       </div>
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-3.5 p-5">
         <div className="grid grid-cols-2 gap-2.5">
-          <Cell label="Time survived" value={fmtTime(game.elapsed())} />
-          <Cell label="Tiles cleared" value={fmtNum(snap.revealed)} />
-          <Cell label="Farthest from start" value={`${fmtNum(snap.maxDist)} tiles`} />
-          <Cell label="Flags placed" value={fmtNum(snap.flags)} />
+          <StatCell label="Time survived" value={fmtTime(game.elapsed())} />
+          <StatCell label="Tiles cleared" value={fmtNum(snap.revealed)} />
+          <StatCell label="Farthest reach" value={`${fmtNum(snap.maxDist)} tiles`} />
+          <StatCell label="Flags placed" value={fmtNum(snap.flags)} />
         </div>
 
-        <button data-autofocus className="btn btn-primary w-full py-3 text-[15px]" onClick={onNewRound}>
-          <RefreshCw size={16} /> Play again
+        <button
+          data-autofocus
+          type="button"
+          className="btn btn-primary w-full py-3 text-[15px]"
+          onClick={() => {
+            sfx.click();
+            onNewRound();
+          }}
+        >
+          <RefreshCw size={16} aria-hidden="true" /> Play again
         </button>
-        <div className="grid grid-cols-3 gap-2.5">
-          <button className="btn" onClick={onRetrySeed} title="Replay the same world">
-            <RotateCcw size={15} /> Same seed
+
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            className="btn px-2"
+            onClick={() => {
+              sfx.click();
+              onRetrySeed();
+            }}
+            title="Replay the same world"
+          >
+            <RotateCcw size={15} aria-hidden="true" /> Retry
           </button>
-          <button className="btn" onClick={onSpectate} title="Look around the board">
-            <Eye size={15} /> Spectate
+          <button
+            type="button"
+            className="btn px-2"
+            onClick={() => {
+              sfx.click();
+              onSpectate();
+            }}
+            title="Look around the board"
+          >
+            <Eye size={15} aria-hidden="true" /> Board
           </button>
-          <button className="btn" onClick={onMenu}>
-            <Home size={15} /> Menu
+          <button
+            type="button"
+            className="btn px-2"
+            onClick={() => {
+              sfx.click();
+              onMenu();
+            }}
+          >
+            <Home size={15} aria-hidden="true" /> Menu
           </button>
         </div>
-        <p className="text-center font-mono text-[11px] text-muted/45">Seed {game.seedLabel}</p>
+
+        <p className="text-center font-mono text-[12px] text-muted">Seed: {game.seedLabel}</p>
       </div>
     </Modal>
   );
