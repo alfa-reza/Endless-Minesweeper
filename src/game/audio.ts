@@ -49,6 +49,7 @@ class AudioEngine {
   private nextStepAt = 0;
   private stepIndex = 0;
   private unlocked = false;
+  private resumePromise: Promise<void> | null = null;
   private lastRevealVariant = -1;
 
   constructor() {
@@ -193,9 +194,10 @@ class AudioEngine {
   }
 
   unlock() {
+    this.unlocked = true;
+    if (this._muted) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
-    this.unlocked = true;
 
     if (ctx.state !== "running") {
       try {
@@ -208,7 +210,7 @@ class AudioEngine {
         /* ignore */
       }
       void this.resumeAndStart();
-    } else if (!this._muted && this._musicVol > 0 && !this.schedulerId) {
+    } else if (this._musicVol > 0 && !this.schedulerId) {
       this.startScheduler();
     }
   }
@@ -234,14 +236,19 @@ class AudioEngine {
     const bus = this.sfxGain;
     if (ctx.state === "running") {
       fn(ctx, bus);
-    } else {
-      void ctx
+      return;
+    }
+    if (!this.resumePromise) {
+      this.resumePromise = ctx
         .resume()
         .then(() => {
           this.syncBusGains();
           if (!this._muted && ctx.state === "running") fn(ctx, bus);
         })
-        .catch(() => undefined);
+        .catch(() => undefined)
+        .finally(() => {
+          this.resumePromise = null;
+        });
     }
   }
 
@@ -504,4 +511,3 @@ class AudioEngine {
 }
 
 export const sfx = new AudioEngine();
-export const audio = sfx;

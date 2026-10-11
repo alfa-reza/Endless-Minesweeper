@@ -71,8 +71,12 @@ function GameCanvasImpl({
     onPauseRequest,
   };
 
+  const sizedOnce = useRef(false);
   useEffect(() => {
-    camera.size = camera.target = defaultCellSize(coarse);
+    if (!sizedOnce.current) {
+      sizedOnce.current = true;
+      camera.size = camera.target = defaultCellSize(coarse);
+    }
     camera.setMinSize(minCellSize(coarse));
   }, [camera, coarse]);
 
@@ -187,6 +191,7 @@ function GameCanvasImpl({
 
     const onPointerDown = (e: PointerEvent) => {
       if (!live.current.inputEnabled) return;
+      if (e.pointerType === "mouse" && pointers.has(e.pointerId)) return;
       sfx.unlock();
       cursor = null;
       canvas.setPointerCapture(e.pointerId);

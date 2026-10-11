@@ -39,8 +39,11 @@ export class Chunk {
   }
 }
 
+// Safe 50-bit integer key for chunk coordinates in [-16_777_216, 16_777_215]
+const KEY_BIAS = 0x1000000;
+const KEY_STRIDE = 0x2000000;
 export const chunkKey = (cx: number, cy: number) =>
-  (cx & 0xffff) * 65536 + (cy & 0xffff);
+  (cx + KEY_BIAS) * KEY_STRIDE + (cy + KEY_BIAS);
 
 /** Fast deterministic 2D hash -> [0, 1). */
 function hash01(x: number, y: number, s: number): number {
@@ -163,6 +166,23 @@ export class World {
 
   private markFog(x: number, y: number) {
     const R = FOG_RADIUS;
+    const lx = x & CHUNK_MASK;
+    const ly = y & CHUNK_MASK;
+    if (lx >= R && lx < CHUNK_SIZE - R && ly >= R && ly < CHUNK_SIZE - R) {
+      const c = this.ensureChunk(x >> CHUNK_SHIFT, y >> CHUNK_SHIFT);
+      const fog = c.fog;
+      for (let dy = -R; dy <= R; dy++) {
+        const row = (ly + dy) << CHUNK_SHIFT;
+        const ady = dy < 0 ? -dy : dy;
+        for (let dx = -R; dx <= R; dx++) {
+          const adx = dx < 0 ? -dx : dx;
+          const level = R + 1 - (adx > ady ? adx : ady);
+          const idx = row | (lx + dx);
+          if (fog[idx] < level) fog[idx] = level;
+        }
+      }
+      return;
+    }
     for (let dy = -R; dy <= R; dy++) {
       for (let dx = -R; dx <= R; dx++) {
         const level = R + 1 - Math.max(Math.abs(dx), Math.abs(dy));

@@ -70,10 +70,7 @@ export function Minimap({ game, camera, highContrast }: Props) {
     const wx = camera.cx + ((mx - size / 2) / MINIMAP_CHUNK_PX) * CHUNK_SIZE;
     const wy = camera.cy + ((my - size / 2) / MINIMAP_CHUNK_PX) * CHUNK_SIZE;
     if (immediate) {
-      camera.cx = wx;
-      camera.cy = wy;
-      camera.cancelFlight();
-      camera.dirty = true;
+      camera.jumpTo(wx, wy);
     } else {
       camera.flyTo(wx, wy, camera.size, 420);
     }

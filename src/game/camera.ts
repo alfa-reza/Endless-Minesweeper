@@ -93,6 +93,14 @@ export class Camera {
     this.emitChange();
   }
 
+  jumpTo(x: number, y: number) {
+    this.flight = null;
+    this.cx = x;
+    this.cy = y;
+    this.dirty = true;
+    this.emitChange();
+  }
+
   /** Keep a cell comfortably inside the viewport (for keyboard/gamepad cursor). */
   ensureCellVisible(x: number, y: number, marginCells = 2.5) {
     const halfW = this.viewW / (2 * this.size) - marginCells;
