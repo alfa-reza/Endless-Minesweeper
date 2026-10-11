@@ -3,6 +3,7 @@ import {
   Dices,
   Heart,
   HelpCircle,
+  History,
   Play,
   SlidersHorizontal,
   Trophy,
@@ -15,6 +16,7 @@ import { DIFFICULTIES, getDifficulty, type DifficultyId } from "../game/config";
 import { randomSeedLabel } from "../game/seed";
 import { loadSave, patchSave, subscribeSave } from "../game/storage";
 import { HelpModal } from "./HelpModal";
+import { HistoryModal } from "./HistoryModal";
 import { MineIcon } from "./Logo";
 import { MenuBackdrop } from "./MenuBackdrop";
 import { SettingsModal } from "./SettingsModal";
@@ -29,7 +31,7 @@ export function StartMenu({ onPlay }: Props) {
   const save = useSyncExternalStore(subscribeSave, loadSave);
   const [difficulty, setDifficulty] = useState<DifficultyId>(save.difficulty);
   const [seedText, setSeedText] = useState("");
-  const [modal, setModal] = useState<"none" | "help" | "settings">("none");
+  const [modal, setModal] = useState<"none" | "help" | "settings" | "history">("none");
   const playRef = useRef<HTMLButtonElement>(null);
 
   const selected = getDifficulty(difficulty);
@@ -220,14 +222,28 @@ export function StartMenu({ onPlay }: Props) {
             </div>
           </section>
 
-          <footer className="animate-rise text-center text-[12.5px] text-muted">
-            Runs played: <b className="font-mono text-ink">{fmt(save.games)}</b>
+          <footer className="animate-rise flex items-center justify-center gap-3 text-center text-[12.5px] text-muted">
+            <span>
+              Runs played: <b className="font-mono text-ink">{fmt(save.games)}</b>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                sfx.unlock();
+                sfx.click();
+                setModal("history");
+              }}
+              className="btn min-h-[36px] px-2.5 py-1 text-[12px]"
+            >
+              <History size={14} aria-hidden="true" /> History
+            </button>
           </footer>
         </main>
       </div>
 
       {modal === "help" && <HelpModal onClose={() => setModal("none")} />}
       {modal === "settings" && <SettingsModal onClose={() => setModal("none")} />}
+      {modal === "history" && <HistoryModal onClose={() => setModal("none")} />}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Difficulty } from "./config";
+import { recordRun } from "./db";
 import { loadSave, patchSave } from "./storage";
 import { HIDDEN, REVEALED, World, seedFromString } from "./world";
 
@@ -216,6 +217,17 @@ export class Game {
           ...save.bestCleared,
           [id]: Math.max(prevCleared, this.world.revealedTotal),
         },
+      });
+      void recordRun({
+        playedAt: Date.now(),
+        difficulty: id,
+        seed: this.seedLabel,
+        score: this.score,
+        cleared: this.world.revealedTotal,
+        maxDist: Math.round(this.maxDist),
+        minesHit: this.minesHit,
+        durationMs: Math.round(this.elapsed()),
+        record: this.record,
       });
     }
   }
