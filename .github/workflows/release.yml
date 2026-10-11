@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+      - name: Package web bundle
+        run: |
+          mkdir -p release
+          (cd dist && zip -r "../release/endless-minesweeper-web-${GITHUB_REF_NAME}.zip" .)
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "release/endless-minesweeper-web-${GITHUB_REF_NAME}.zip" \
+            --title "Endless Minesweeper ${GITHUB_REF_NAME}" \
+            --generate-notes
