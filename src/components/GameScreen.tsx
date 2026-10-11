@@ -48,7 +48,7 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
 
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [tool, setTool] = useState<Tool>("dig");
-  const [hurtKey, setHurtKey] = useState(0);
+  const [hurt, setHurt] = useState(false);
 
   const overlayRef = useRef(overlay);
   overlayRef.current = overlay;
@@ -82,6 +82,7 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
 
   useEffect(() => {
     let overTimer = 0;
+    let hurtTimer = 0;
     game.onEvent = (e: GameEvent) => {
       const s = saveRef.current;
       const pal = getBoardPalette(s.highContrast);
@@ -109,8 +110,11 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
           if (!s.reduceMotion) {
             camera.addTrauma(e.livesLeft > 0 ? 0.55 : 0.9);
             effects.spawnBurst(e.x + 0.5, e.y + 0.5, 22, pal.danger, 7.5);
+            setHurt(false);
+            window.requestAnimationFrame(() => setHurt(true));
+            window.clearTimeout(hurtTimer);
+            hurtTimer = window.setTimeout(() => setHurt(false), 480);
           }
-          setHurtKey((k) => k + 1);
           if (s.haptics) navigator.vibrate?.(e.livesLeft > 0 ? 60 : [80, 40, 120]);
           camera.cancelFlight();
           break;
@@ -126,6 +130,7 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
     return () => {
       game.onEvent = null;
       window.clearTimeout(overTimer);
+      window.clearTimeout(hurtTimer);
     };
   }, [game, camera, effects]);
 
@@ -195,11 +200,11 @@ export function GameScreen({ difficulty, seedLabel, onNewRound, onRetrySeed, onM
         onPauseRequest={pause}
       />
 
-      {/* Mine hit flash */}
-      {hurtKey > 0 && (
+      {/* Mine hit flash (unmounts cleanly after animation; never gets stuck) */}
+      {hurt && (
         <div
-          key={hurtKey}
-          className="animate-hurt pointer-events-none absolute inset-0 bg-danger/20"
+          onAnimationEnd={() => setHurt(false)}
+          className="animate-hurt pointer-events-none absolute inset-0 bg-danger/25"
         />
       )}
 

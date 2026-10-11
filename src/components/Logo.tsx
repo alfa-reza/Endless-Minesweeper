@@ -1,21 +1,22 @@
 import { cn } from "../utils/cn";
 
-/** Little spiky mine mark used in the menu and HUD. */
+/** Geometric Endless Minesweeper emblem (flat vector, no gradients). */
 export function MineIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" className={cn("h-10 w-10", className)} aria-hidden="true">
-      <defs>
-        <radialGradient id="mineBody" cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#ff9a9a" />
-          <stop offset="55%" stopColor="#ff6b6b" />
-          <stop offset="100%" stopColor="#c43c5a" />
-        </radialGradient>
-      </defs>
-      <g stroke="#ff6b6b" strokeWidth="5" strokeLinecap="round">
-        <path d="M32 7v10M32 47v10M7 32h10M47 32h10M14.5 14.5l7 7M42.5 42.5l7 7M49.5 14.5l-7 7M21.5 42.5l-7 7" />
+      {/* Tile frame */}
+      <rect x="4" y="4" width="56" height="56" rx="14" fill="#1e232b" stroke="#353b47" strokeWidth="3" />
+      {/* Subtle 2x2 grid lines */}
+      <path d="M32 10v44M10 32h44" stroke="#2a303b" strokeWidth="2" />
+      {/* Spikes */}
+      <g stroke="#f43f5e" strokeWidth="4.5" strokeLinecap="round">
+        <path d="M32 12v8M32 44v8M12 32h8M44 32h8M18 18l6 6M40 40l6 6M46 18l-6 6M24 40l-6 6" />
       </g>
-      <circle cx="32" cy="32" r="15" fill="url(#mineBody)" />
-      <circle cx="26" cy="26" r="4.2" fill="rgba(255,255,255,0.7)" />
+      {/* Core */}
+      <circle cx="32" cy="32" r="11" fill="#f43f5e" />
+      <circle cx="32" cy="32" r="4.5" fill="#111317" />
+      {/* Corner safe-tile accent */}
+      <rect x="42" y="12" width="10" height="10" rx="2.5" fill="#34d399" />
     </svg>
   );
 }

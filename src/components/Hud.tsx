@@ -75,21 +75,39 @@ export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
         className="flex shrink-0 items-center gap-0.5"
         aria-label={`${snap.lives} of ${snap.maxLives} lives left`}
       >
-        {Array.from({ length: snap.maxLives }).map((_, i) => {
-          const alive = i < snap.lives;
-          return (
+        {snap.maxLives > 3 && (
+          <span
+            className={cn(
+              "flex items-center gap-1 font-mono text-[13px] font-bold sm:hidden",
+              snap.lives === 1 ? "text-danger" : "text-ink",
+            )}
+          >
             <Heart
-              key={i}
               size={15}
-              fill={alive ? "#f43f5e" : "transparent"}
+              fill="#f43f5e"
               aria-hidden="true"
-              className={cn(
-                alive ? "text-danger" : "text-muted/35",
-                alive && snap.lives === 1 && snap.maxLives > 1 && "animate-heartbeat",
-              )}
+              className={cn("text-danger", snap.lives === 1 && "animate-heartbeat")}
             />
-          );
-        })}
+            {snap.lives}
+          </span>
+        )}
+        <div className={cn("items-center gap-0.5", snap.maxLives > 3 ? "hidden sm:flex" : "flex")}>
+          {Array.from({ length: snap.maxLives }).map((_, i) => {
+            const alive = i < snap.lives;
+            return (
+              <Heart
+                key={i}
+                size={15}
+                fill={alive ? "#f43f5e" : "transparent"}
+                aria-hidden="true"
+                className={cn(
+                  alive ? "text-danger" : "text-muted/35",
+                  alive && snap.lives === 1 && snap.maxLives > 1 && "animate-heartbeat",
+                )}
+              />
+            );
+          })}
+        </div>
       </div>
       <Divider />
       <Stat

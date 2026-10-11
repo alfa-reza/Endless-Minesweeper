@@ -146,25 +146,27 @@ input {
   }
 }
 
-/* ---------- Native <dialog> modal ---------- */
-dialog.modal-dialog {
-  margin: auto;
-  padding: 0;
-  color: var(--color-ink);
-  border: 1px solid #323844;
-  border-radius: 0.875rem;
-  background: #191c22;
-  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.65);
-  max-width: calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-  max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-  overscroll-behavior: contain;
-  overflow: hidden;
-}
+/* ---------- Native <dialog> modal (inside @layer components so max-w-* utilities win!) ---------- */
+@layer components {
+  dialog.modal-dialog {
+    margin: auto;
+    padding: 0;
+    color: var(--color-ink);
+    border: 1px solid #323844;
+    border-radius: 0.875rem;
+    background: #191c22;
+    box-shadow: 0 20px 56px rgba(0, 0, 0, 0.65);
+    max-width: calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overscroll-behavior: contain;
+    overflow: hidden;
+  }
 
-dialog.modal-dialog::backdrop {
-  overflow: hidden;
-  overscroll-behavior: contain;
-  background: rgba(9, 10, 13, 0.72);
+  dialog.modal-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: rgba(9, 10, 13, 0.72);
+  }
 }
 
 /* ---------- Animations ---------- */

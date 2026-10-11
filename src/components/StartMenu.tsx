@@ -1,5 +1,4 @@
 import {
-  CalendarDays,
   ChevronDown,
   Dices,
   Heart,
@@ -13,7 +12,7 @@ import {
 import { useRef, useState, useSyncExternalStore } from "react";
 import { sfx } from "../game/audio";
 import { DIFFICULTIES, getDifficulty, type DifficultyId } from "../game/config";
-import { dailySeedLabel, randomSeedLabel } from "../game/seed";
+import { randomSeedLabel } from "../game/seed";
 import { loadSave, patchSave, subscribeSave } from "../game/storage";
 import { HelpModal } from "./HelpModal";
 import { MineIcon } from "./Logo";
@@ -193,19 +192,6 @@ export function StartMenu({ onPlay }: Props) {
                 aria-label="Roll a random seed"
               >
                 <Dices size={18} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="btn btn-icon"
-                onClick={() => {
-                  sfx.unlock();
-                  sfx.click();
-                  setSeedText(dailySeedLabel());
-                }}
-                title="Today's daily seed"
-                aria-label="Use today's daily seed"
-              >
-                <CalendarDays size={18} aria-hidden="true" />
               </button>
             </div>
 
