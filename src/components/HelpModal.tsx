@@ -9,9 +9,9 @@ interface Props {
 
 function Item({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 p-3">
+    <div className="lcd-well flex items-start gap-3 rounded-[5px] p-3">
       <div
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#353b47] bg-mint/10 text-mint"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-[4px] border border-[#454d5b] bg-[#282d35] text-mint"
         aria-hidden="true"
       >
         {icon}
@@ -32,7 +32,7 @@ export function HelpModal({ onClose }: Props) {
 
   return (
     <Modal onClose={onClose} labelledBy="help-title" className="max-w-3xl">
-      <div className="border-b border-[#2e333d] px-5 pt-4 pb-4">
+      <div className="border-b-2 border-[#16191f] bg-[#20242b] px-5 pt-4 pb-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <Gamepad2 size={21} className="text-mint" aria-hidden="true" />

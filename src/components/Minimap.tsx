@@ -101,8 +101,8 @@ export function Minimap({ game, camera, highContrast }: Props) {
       <div
         className={
           compact
-            ? "surface absolute right-0 bottom-0 z-20 overflow-hidden rounded-xl p-1"
-            : "surface relative overflow-hidden rounded-xl p-1"
+            ? "surface absolute right-0 bottom-0 z-20 overflow-hidden rounded-md p-1"
+            : "surface relative overflow-hidden rounded-md p-1"
         }
       >
         {compact && (

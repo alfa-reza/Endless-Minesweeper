@@ -69,36 +69,34 @@ export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
   const ms = useElapsed(game, snap.running, snap.status);
   const beating = snap.score > 0 && snap.score >= snap.best;
   return (
-    <div className="surface flex items-center gap-2 rounded-xl px-2.5 py-2 sm:gap-3.5 sm:px-3.5">
+    <div className="surface flex items-center gap-2 rounded-md px-2 py-1.5 sm:gap-3 sm:px-3">
       <MineIcon className="hidden h-6 w-6 shrink-0 sm:block" />
       <div
-        className="flex shrink-0 items-center gap-0.5"
+        className="lcd-well flex shrink-0 items-center gap-0.5 rounded px-1.5 py-1"
         aria-label={`${snap.lives} of ${snap.maxLives} lives left`}
       >
-        {snap.maxLives > 3 && (
-          <span
-            className={cn(
-              "flex items-center gap-1 font-mono text-[13px] font-bold sm:hidden",
-              snap.lives === 1 ? "text-danger" : "text-ink",
-            )}
-          >
-            <Heart
-              size={15}
-              fill="#f43f5e"
-              aria-hidden="true"
-              className={cn("text-danger", snap.lives === 1 && "animate-heartbeat")}
-            />
-            {snap.lives}
-          </span>
-        )}
-        <div className={cn("items-center gap-0.5", snap.maxLives > 3 ? "hidden sm:flex" : "flex")}>
+        <span
+          className={cn(
+            "flex items-center gap-1 font-mono text-[13px] font-bold sm:hidden",
+            snap.lives === 1 ? "text-danger" : "text-ink",
+          )}
+        >
+          <Heart
+            size={14}
+            fill="#f87171"
+            aria-hidden="true"
+            className={cn("text-danger", snap.lives === 1 && snap.maxLives > 1 && "animate-heartbeat")}
+          />
+          {snap.lives}
+        </span>
+        <div className="hidden items-center gap-0.5 sm:flex">
           {Array.from({ length: snap.maxLives }).map((_, i) => {
             const alive = i < snap.lives;
             return (
               <Heart
                 key={i}
-                size={15}
-                fill={alive ? "#f43f5e" : "transparent"}
+                size={14}
+                fill={alive ? "#f87171" : "transparent"}
                 aria-hidden="true"
                 className={cn(
                   alive ? "text-danger" : "text-muted/35",
@@ -109,33 +107,34 @@ export function StatsBar({ game, snap }: { game: Game; snap: Snapshot }) {
           })}
         </div>
       </div>
-      <Divider />
-      <Stat
-        icon={<Trophy size={14} className={beating ? "text-mint" : undefined} />}
-        label="Score"
-        value={<span className={beating ? "text-mint" : undefined}>{fmtNum(snap.score)}</span>}
-        badge={beating ? "PB" : undefined}
-      />
-      <Stat
-        icon={<Trophy size={14} className={beating ? "text-mint" : undefined} />}
-        label="Best"
-        value={<span className={beating ? "text-mint" : undefined}>{fmtNum(snap.best)}</span>}
-        className="hidden md:flex"
-      />
-      <Divider />
-      <Stat icon={<Timer size={14} />} label="Time" value={fmtTime(ms)} />
-      <Stat
-        icon={<Grid3x3 size={14} />}
-        label="Cleared"
-        value={fmtNum(snap.revealed)}
-        className="hidden sm:flex"
-      />
-      <Stat
-        icon={<Flag size={14} className="text-flag" />}
-        label="Flags"
-        value={snap.flags}
-        className="hidden sm:flex"
-      />
+      <div className="lcd-well flex items-center gap-2 rounded px-1.5 py-1 sm:gap-3.5 sm:px-2.5">
+        <Stat
+          icon={<Trophy size={14} className={beating ? "text-mint" : "text-flag"} />}
+          label="Score"
+          value={<span className={beating ? "text-mint" : "text-mint"}>{fmtNum(snap.score)}</span>}
+          badge={beating ? "PB" : undefined}
+        />
+        <Stat
+          icon={<Trophy size={14} className="text-flag" />}
+          label="Best"
+          value={<span className="text-flag">{fmtNum(snap.best)}</span>}
+          className="hidden md:flex"
+        />
+        <Divider />
+        <Stat icon={<Timer size={14} className="text-accent" />} label="Time" value={<span className="text-ink">{fmtTime(ms)}</span>} />
+        <Stat
+          icon={<Grid3x3 size={14} />}
+          label="Cleared"
+          value={fmtNum(snap.revealed)}
+          className="hidden sm:flex"
+        />
+        <Stat
+          icon={<Flag size={14} className="text-flag" />}
+          label="Flags"
+          value={snap.flags}
+          className="hidden sm:flex"
+        />
+      </div>
     </div>
   );
 }

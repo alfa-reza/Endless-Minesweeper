@@ -40,7 +40,7 @@ export function PauseModal({
 
   return (
     <Modal onClose={onResume} labelledBy="pause-title" className="max-w-md">
-      <div className="flex items-center justify-between border-b border-[#2e333d] px-4 py-3.5">
+      <div className="flex items-center justify-between border-b-2 border-[#16191f] bg-[#20242b] px-4 py-3">
         <div>
           <h1 id="pause-title" className="text-lg font-bold tracking-tight">
             Paused
@@ -49,7 +49,7 @@ export function PauseModal({
         </div>
 
         <div className="flex items-center gap-2">
-          <div role="tablist" aria-label="Pause sections" className="flex rounded-lg border border-[#2e333d] bg-[#111317] p-0.5">
+          <div role="tablist" aria-label="Pause sections" className="lcd-well flex rounded-[5px] p-0.5">
             <button
               type="button"
               role="tab"
@@ -59,8 +59,8 @@ export function PauseModal({
                 setTab("game");
               }}
               className={cn(
-                "focus-ring min-h-[36px] cursor-pointer rounded-md px-3 text-[13px] font-semibold transition-colors",
-                tab === "game" ? "bg-[#232730] text-ink" : "text-muted hover:text-ink",
+                "focus-ring min-h-[36px] cursor-pointer rounded-[3px] px-3 text-[13px] font-bold transition-colors",
+                tab === "game" ? "bg-[#363c46] text-ink" : "text-muted hover:text-ink",
               )}
             >
               Game
@@ -74,8 +74,8 @@ export function PauseModal({
                 setTab("settings");
               }}
               className={cn(
-                "focus-ring flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold transition-colors",
-                tab === "settings" ? "bg-[#232730] text-ink" : "text-muted hover:text-ink",
+                "focus-ring flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-[3px] px-3 text-[13px] font-bold transition-colors",
+                tab === "settings" ? "bg-[#363c46] text-ink" : "text-muted hover:text-ink",
               )}
             >
               <SlidersHorizontal size={14} aria-hidden="true" /> Settings
@@ -99,12 +99,12 @@ export function PauseModal({
       <div className="thin-scroll max-h-[68dvh] overflow-y-auto p-4">
         {tab === "game" ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 px-3.5 py-2.5">
+            <div className="lcd-well flex items-center justify-between gap-3 rounded-[5px] px-3.5 py-2.5">
               <div className="min-w-0">
                 <div className="text-[11.5px] font-semibold tracking-wider text-muted uppercase">
                   World seed
                 </div>
-                <div className="mt-0.5 truncate font-mono text-[15px] font-bold tracking-wider text-ink">
+                <div className="mt-0.5 truncate font-mono text-[15px] font-bold tracking-wider text-mint">
                   {game.seedLabel}
                 </div>
                 <div className="mt-0.5 text-[12px] font-medium" style={{ color: d.accent }}>

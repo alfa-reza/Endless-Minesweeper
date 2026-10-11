@@ -34,7 +34,7 @@ function ToggleRow({
       role="switch"
       aria-checked={checked}
       onClick={onToggle}
-      className="focus-ring flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 px-3.5 py-2.5 text-left transition-colors hover:border-[#464e5e]"
+      className="focus-ring lcd-well flex w-full cursor-pointer items-center justify-between gap-3 rounded-[5px] px-3.5 py-2.5 text-left transition-colors hover:border-[#4d5666]"
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 text-mint" aria-hidden="true">
@@ -48,14 +48,14 @@ function ToggleRow({
       <span
         aria-hidden="true"
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
-          checked ? "border-mint bg-mint" : "border-[#3b4252] bg-[#232730]",
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-[4px] border-2 transition-colors",
+          checked ? "border-[#66bb6a] bg-[#2e7d32]" : "border-[#454d5b] bg-[#1c2026]",
         )}
       >
         <span
           className={cn(
-            "inline-block h-4 w-4 rounded-full bg-[#111317] shadow transition-transform",
-            checked ? "translate-x-6" : "translate-x-1",
+            "inline-block h-4 w-4 rounded-[2px] bg-[#f3f4f6] shadow transition-transform",
+            checked ? "translate-x-5" : "translate-x-0.5",
           )}
         />
       </span>
@@ -83,7 +83,7 @@ export function SettingsPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="space-y-3 rounded-lg border border-[#2e333d] bg-[#111317]/80 p-3.5">
+      <div className="lcd-well space-y-3 rounded-[5px] p-3.5">
         <div>
           <div className="mb-1 flex items-center justify-between text-[13px]">
             <label htmlFor="music-vol" className="flex items-center gap-2 font-semibold text-ink">
@@ -159,7 +159,7 @@ export function SettingsPanel() {
         }}
       />
 
-      <div className="rounded-lg border border-[#2e333d] bg-[#111317]/80 p-3">
+      <div className="lcd-well rounded-[5px] p-3">
         <div className="mb-2 text-[13px] font-semibold text-ink">Touch long-press to flag</div>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Long press duration">
           {LONG_PRESS_OPTIONS.map((opt) => {
@@ -175,10 +175,8 @@ export function SettingsPanel() {
                   patchSave({ longPressMs: opt.ms });
                 }}
                 className={cn(
-                  "focus-ring min-h-[44px] cursor-pointer rounded-lg border px-2 py-1.5 text-[12px] font-semibold transition-colors",
-                  active
-                    ? "border-mint bg-mint/15 text-mint"
-                    : "border-[#2e333d] bg-[#232730] text-muted hover:text-ink",
+                  "btn min-h-[44px] px-2 py-1.5 text-[12px]",
+                  active && "btn-primary",
                 )}
               >
                 {opt.label}
@@ -194,7 +192,7 @@ export function SettingsPanel() {
 export function SettingsModal({ onClose }: Props) {
   return (
     <Modal onClose={onClose} labelledBy="settings-title" className="max-w-md">
-      <div className="flex items-center justify-between border-b border-[#2e333d] px-5 py-3.5">
+      <div className="flex items-center justify-between border-b-2 border-[#16191f] bg-[#20242b] px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <SlidersHorizontal size={19} className="text-mint" aria-hidden="true" />
           <h1 id="settings-title" className="text-lg font-bold tracking-tight">

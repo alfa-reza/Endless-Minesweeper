@@ -143,12 +143,13 @@ function drawHiddenTile(
   ctx.fillStyle = pal.hidden;
   ctx.fillRect(X, Y, w, h);
   if (w >= 11) {
+    const b = w >= 28 ? 2 : 1.5;
     ctx.fillStyle = pal.hiddenHi;
-    ctx.fillRect(X, Y, w, 1.5);
-    ctx.fillRect(X, Y, 1.5, h);
+    ctx.fillRect(X, Y, w, b);
+    ctx.fillRect(X, Y, b, h);
     ctx.fillStyle = pal.hiddenLo;
-    ctx.fillRect(X, Y + h - 1.5, w, 1.5);
-    ctx.fillRect(X + w - 1.5, Y, 1.5, h);
+    ctx.fillRect(X, Y + h - b, w, b);
+    ctx.fillRect(X + w - b, Y, b, h);
   }
   ctx.globalAlpha = 1;
 }

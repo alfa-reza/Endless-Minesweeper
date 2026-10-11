@@ -109,7 +109,7 @@ export function StartMenu({ onPlay }: Props) {
 
           {/* Compact setup card */}
           <section
-            className="animate-rise surface w-full rounded-xl p-4 sm:p-5"
+            className="animate-rise surface w-full rounded-md p-4 sm:p-5"
             aria-label="Game setup"
           >
             {/* Difficulty dropdown */}
@@ -120,7 +120,7 @@ export function StartMenu({ onPlay }: Props) {
               >
                 Difficulty
               </label>
-              <span className="text-[12.5px] font-medium text-ink/90">{selected.tagline}</span>
+              <span className="text-[12.5px] font-medium text-ink">{selected.tagline}</span>
             </div>
 
             <div className="relative mt-1.5">
@@ -128,7 +128,7 @@ export function StartMenu({ onPlay }: Props) {
                 id="difficulty-select"
                 value={difficulty}
                 onChange={(e) => pick(e.target.value as DifficultyId)}
-                className="focus-ring min-h-[44px] w-full cursor-pointer appearance-none rounded-lg border border-[#353b47] bg-[#111317] pr-10 pl-3.5 text-[15px] font-semibold text-ink"
+                className="focus-ring lcd-well min-h-[44px] w-full cursor-pointer appearance-none rounded-[5px] pr-10 pl-3.5 text-[15px] font-semibold text-ink"
               >
                 {DIFFICULTIES.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -144,8 +144,8 @@ export function StartMenu({ onPlay }: Props) {
               />
             </div>
 
-            {/* Compact stats row for chosen difficulty */}
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2a2f39] bg-[#111317]/75 px-3 py-2 text-[12.5px]">
+            {/* Compact LCD stats row for chosen difficulty */}
+            <div className="lcd-well mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-[5px] px-3 py-2 text-[12.5px]">
               <span className="flex items-center gap-1.5 text-ink">
                 <span className="flex items-center gap-0.5 text-danger" aria-label={`${selected.lives} lives`}>
                   {Array.from({ length: selected.lives }).map((_, i) => (
@@ -154,9 +154,9 @@ export function StartMenu({ onPlay }: Props) {
                 </span>
                 <span className="font-mono text-muted">×{selected.multiplier} pts</span>
               </span>
-              <span className="flex items-center gap-1 font-mono font-semibold text-flag">
+              <span className="flex items-center gap-1 font-mono font-bold text-flag">
                 <Trophy size={13} aria-hidden="true" />
-                {bestScore > 0 ? `${fmt(bestScore)} (${fmt(bestCleared)} tiles)` : "No record yet"}
+                {bestScore > 0 ? `${fmt(bestScore)} (${fmt(bestCleared)})` : "0000"}
               </span>
             </div>
 
@@ -178,7 +178,7 @@ export function StartMenu({ onPlay }: Props) {
                 placeholder="Random or custom seed"
                 spellCheck={false}
                 autoComplete="off"
-                className="focus-ring min-h-[44px] min-w-0 flex-1 rounded-lg border border-[#353b47] bg-[#111317] px-3 py-2 font-mono text-[16px] tracking-wide text-ink uppercase placeholder:text-[14px] placeholder:tracking-normal placeholder:text-muted placeholder:normal-case"
+                className="focus-ring lcd-well min-h-[44px] min-w-0 flex-1 rounded-[5px] px-3 py-2 font-mono text-[16px] tracking-wide text-mint uppercase placeholder:text-[14px] placeholder:tracking-normal placeholder:text-muted placeholder:normal-case"
               />
               <button
                 type="button"
