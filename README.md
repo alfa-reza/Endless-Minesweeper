@@ -10,6 +10,21 @@
 
 Explore as far as you want in any direction. Your first click always clears a safe 3x3 pocket, and the board expands on demand as you pan and dig.
 
+## Download
+
+Latest release: **[v1.1.0](https://github.com/alfa-reza/Endless-Minesweeper/releases/tag/v1.1.0)**
+
+| Platform | Architecture | Download |
+| --- | --- | --- |
+| Android | Universal APK | [endless-minesweeper-v1.1.0-android-universal.apk](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-android-universal.apk) |
+| Windows | x86_64 | [endless-minesweeper-v1.1.0-windows-x64-setup.exe](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-windows-x64-setup.exe) |
+| Windows | ARM64 | [endless-minesweeper-v1.1.0-windows-arm64-setup.exe](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-windows-arm64-setup.exe) |
+| Linux | x86_64 | [AppImage](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-linux-x86_64.AppImage) · [.deb](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-linux-x86_64.deb) |
+| Linux | ARM64 | [AppImage](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-linux-arm64.AppImage) · [.deb](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-linux-arm64.deb) |
+| Web | Static bundle | [endless-minesweeper-v1.1.0-web.zip](https://github.com/alfa-reza/Endless-Minesweeper/releases/download/v1.1.0/endless-minesweeper-v1.1.0-web.zip) |
+
+All builds are also listed on the [Releases page](https://github.com/alfa-reza/Endless-Minesweeper/releases).
+
 ## Screenshots
 
 <table>
