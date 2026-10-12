@@ -9,31 +9,151 @@ permissions:
   contents: write
 
 jobs:
-  release-web:
+  build-web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
       - run: npm test
       - run: npx tsc --noEmit
       - run: npm run build
-
       - name: Package web bundle
         run: |
-          mkdir -p release
-          (cd dist && zip -r "../release/endless-minesweeper-web-${GITHUB_REF_NAME}.zip" .)
+          mkdir -p artifacts
+          (cd dist && zip -r "../artifacts/endless-minesweeper-${GITHUB_REF_NAME}-web.zip" .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle
+          path: artifacts/*
 
+  build-android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android NDK and build tools
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - run: npm ci
+      - name: Build and sign Android APK
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: |
+          npx tauri android init --ci
+          npx tauri android build --apk
+          UNSIGNED_APK=$(find src-tauri/gen/android/app/build/outputs/apk -name "*universal*unsigned.apk" | head -n 1)
+          if [ -z "$UNSIGNED_APK" ]; then
+            UNSIGNED_APK=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
+          mkdir -p artifacts
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias endless \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass endless123 -keypass endless123 \
+            -dname "CN=Endless Minesweeper, O=alfa-reza, C=ID"
+          BUILD_TOOLS_DIR="${ANDROID_HOME}/build-tools/35.0.0"
+          "${BUILD_TOOLS_DIR}/zipalign" -f -p 4 "$UNSIGNED_APK" artifacts/aligned.apk
+          "${BUILD_TOOLS_DIR}/apksigner" sign \
+            --ks release.keystore \
+            --ks-key-alias endless \
+            --ks-pass pass:endless123 \
+            --key-pass pass:endless123 \
+            --out "artifacts/endless-minesweeper-${GITHUB_REF_NAME}-android-universal.apk" \
+            artifacts/aligned.apk
+          rm -f artifacts/aligned.apk release.keystore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts/*.apk
+
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: windows-x64
+            os: windows-latest
+            bundles: nsis
+          - id: windows-arm64
+            os: windows-11-arm
+            bundles: nsis
+          - id: linux-x86_64
+            os: ubuntu-22.04
+            bundles: appimage,deb
+          - id: linux-arm64
+            os: ubuntu-24.04-arm
+            bundles: appimage,deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux WebKit dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+      - run: npm ci
+      - name: Build Tauri desktop bundles
+        run: npx tauri build --bundles ${{ matrix.bundles }}
+      - name: Collect Windows artifacts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $exe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" | Select-Object -First 1
+          Copy-Item $exe.FullName "artifacts/endless-minesweeper-${env:GITHUB_REF_NAME}-${{ matrix.id }}-setup.exe"
+      - name: Collect Linux artifacts
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p artifacts
+          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -n 1)
+          DEB=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          [ -n "$APPIMAGE" ] && cp "$APPIMAGE" "artifacts/endless-minesweeper-${GITHUB_REF_NAME}-${{ matrix.id }}.AppImage"
+          [ -n "$DEB" ] && cp "$DEB" "artifacts/endless-minesweeper-${GITHUB_REF_NAME}-${{ matrix.id }}.deb"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.id }}
+          path: artifacts/*
+
+  publish-release:
+    needs: [build-web, build-android, build-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            "release/endless-minesweeper-web-${GITHUB_REF_NAME}.zip" \
+            release-assets/* \
             --title "Endless Minesweeper ${GITHUB_REF_NAME}" \
             --generate-notes
