@@ -1,6 +1,6 @@
 [package]
 name = "endless-minesweeper"
-version = "1.0.0"
+version = "1.1.0"
 description = "Infinite, procedurally generated minesweeper"
 authors = ["alfareza"]
 license = "GPL-3.0"
